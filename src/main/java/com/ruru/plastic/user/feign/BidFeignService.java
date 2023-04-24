@@ -12,6 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(value = "PLASTIC-BID-SERVICE")
 @Service
 public interface BidFeignService {
-    @PostMapping("/user/data/count")
+    @PostMapping("/event/count")
     DataResponse<UserCounter> countEnquiryAndQuotation(@RequestBody User user);
 }

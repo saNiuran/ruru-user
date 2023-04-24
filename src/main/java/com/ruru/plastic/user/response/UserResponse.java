@@ -18,6 +18,5 @@ public class UserResponse extends User implements Serializable {
     private String uid;         //第三方邓丽 用户编号
     private Member member;
     private UserAccount userAccount;
-    private Integer certLevel;
     private Company company;
 }

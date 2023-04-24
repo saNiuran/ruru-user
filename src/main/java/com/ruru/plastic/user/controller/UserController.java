@@ -20,7 +20,6 @@ import com.ruru.plastic.user.task.PushTask;
 import com.ruru.plastic.user.task.TokenTask;
 import com.ruru.plastic.user.bean.*;
 import com.ruru.plastic.user.service.*;
-import com.ruru.plastic.user.utils.MyStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,9 +73,22 @@ public class UserController {
         return DataResponse.success(response);
     }
 
+    @LoginRequired
+    @PostMapping("/call")
+    public DataResponse<String> callUserById(@RequestBody User user){
+        if (user == null || user.getId() == null) {
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+        User userById = userService.getUserById(user.getId());
+        if (userById == null) {
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+        return DataResponse.success(userById.getMobile());
+    }
+
     private UserResponse getUserResponseById(Long userId) {
         User userById = userService.getUserById(userId);
-        userById.setMobile(MyStringUtils.getHidePhone(userById.getMobile()));
+//        userById.setMobile(MyStringUtils.getHidePhone(userById.getMobile()));
 
         UserResponse response = new UserResponse();
         BeanUtils.copyProperties(userById,response);
@@ -132,6 +144,13 @@ public class UserController {
     @LoginRequired
     @PostMapping("/my")
     public DataResponse<User> getCurrentUser(@CurrentUser User user) {
+        return DataResponse.success(user);
+    }
+
+
+    @LoginRequired
+    @PostMapping("/token/check")
+    public DataResponse<User> tokenCheck(@CurrentUser User user) {
         return DataResponse.success(user);
     }
 
@@ -192,7 +211,7 @@ public class UserController {
     @RequestMapping(value = "/userLogout", method = RequestMethod.POST)
     public DataResponse<Void> userLogout(@CurrentUser User user) {
         redisTemplate.delete(Constants.REDIS_KEY_USER_TOKEN + user.getMobile());
-        return DataResponse.success();
+        return DataResponse.success(null);
     }
 
     /**
