@@ -5,7 +5,8 @@
     <id column="id" property="id" jdbcType="BIGINT" />
     <result column="lord_id" property="lordId" jdbcType="BIGINT" />
     <result column="lord_type" property="lordType" jdbcType="INTEGER" />
-    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="operator_id" property="operatorId" jdbcType="BIGINT" />
+    <result column="operator_type" property="operatorType" jdbcType="INTEGER" />
     <result column="cert_level" property="certLevel" jdbcType="INTEGER" />
     <result column="cert_status" property="certStatus" jdbcType="INTEGER" />
     <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
@@ -69,7 +70,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, lord_id, lord_type, user_id, cert_level, cert_status, create_time
+    id, lord_id, lord_type, operator_id, operator_type, cert_level, cert_status, create_time
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.CertificateLogExample" >
     select
@@ -105,12 +106,12 @@
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into certificate_log (lord_id, lord_type, user_id, 
-      cert_level, cert_status, create_time
-      )
-    values (#{lordId,jdbcType=BIGINT}, #{lordType,jdbcType=INTEGER}, #{userId,jdbcType=BIGINT}, 
-      #{certLevel,jdbcType=INTEGER}, #{certStatus,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}
-      )
+    insert into certificate_log (lord_id, lord_type, operator_id, 
+      operator_type, cert_level, cert_status, 
+      create_time)
+    values (#{lordId,jdbcType=BIGINT}, #{lordType,jdbcType=INTEGER}, #{operatorId,jdbcType=BIGINT}, 
+      #{operatorType,jdbcType=INTEGER}, #{certLevel,jdbcType=INTEGER}, #{certStatus,jdbcType=INTEGER}, 
+      #{createTime,jdbcType=TIMESTAMP})
   </insert>
   <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.CertificateLog" >
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
@@ -124,8 +125,11 @@
       <if test="lordType != null" >
         lord_type,
       </if>
-      <if test="userId != null" >
-        user_id,
+      <if test="operatorId != null" >
+        operator_id,
+      </if>
+      <if test="operatorType != null" >
+        operator_type,
       </if>
       <if test="certLevel != null" >
         cert_level,
@@ -144,8 +148,11 @@
       <if test="lordType != null" >
         #{lordType,jdbcType=INTEGER},
       </if>
-      <if test="userId != null" >
-        #{userId,jdbcType=BIGINT},
+      <if test="operatorId != null" >
+        #{operatorId,jdbcType=BIGINT},
+      </if>
+      <if test="operatorType != null" >
+        #{operatorType,jdbcType=INTEGER},
       </if>
       <if test="certLevel != null" >
         #{certLevel,jdbcType=INTEGER},
@@ -176,8 +183,11 @@
       <if test="record.lordType != null" >
         lord_type = #{record.lordType,jdbcType=INTEGER},
       </if>
-      <if test="record.userId != null" >
-        user_id = #{record.userId,jdbcType=BIGINT},
+      <if test="record.operatorId != null" >
+        operator_id = #{record.operatorId,jdbcType=BIGINT},
+      </if>
+      <if test="record.operatorType != null" >
+        operator_type = #{record.operatorType,jdbcType=INTEGER},
       </if>
       <if test="record.certLevel != null" >
         cert_level = #{record.certLevel,jdbcType=INTEGER},
@@ -198,7 +208,8 @@
     set id = #{record.id,jdbcType=BIGINT},
       lord_id = #{record.lordId,jdbcType=BIGINT},
       lord_type = #{record.lordType,jdbcType=INTEGER},
-      user_id = #{record.userId,jdbcType=BIGINT},
+      operator_id = #{record.operatorId,jdbcType=BIGINT},
+      operator_type = #{record.operatorType,jdbcType=INTEGER},
       cert_level = #{record.certLevel,jdbcType=INTEGER},
       cert_status = #{record.certStatus,jdbcType=INTEGER},
       create_time = #{record.createTime,jdbcType=TIMESTAMP}
@@ -215,8 +226,11 @@
       <if test="lordType != null" >
         lord_type = #{lordType,jdbcType=INTEGER},
       </if>
-      <if test="userId != null" >
-        user_id = #{userId,jdbcType=BIGINT},
+      <if test="operatorId != null" >
+        operator_id = #{operatorId,jdbcType=BIGINT},
+      </if>
+      <if test="operatorType != null" >
+        operator_type = #{operatorType,jdbcType=INTEGER},
       </if>
       <if test="certLevel != null" >
         cert_level = #{certLevel,jdbcType=INTEGER},
@@ -234,7 +248,8 @@
     update certificate_log
     set lord_id = #{lordId,jdbcType=BIGINT},
       lord_type = #{lordType,jdbcType=INTEGER},
-      user_id = #{userId,jdbcType=BIGINT},
+      operator_id = #{operatorId,jdbcType=BIGINT},
+      operator_type = #{operatorType,jdbcType=INTEGER},
       cert_level = #{certLevel,jdbcType=INTEGER},
       cert_status = #{certStatus,jdbcType=INTEGER},
       create_time = #{createTime,jdbcType=TIMESTAMP}

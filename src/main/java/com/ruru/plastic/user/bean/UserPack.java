@@ -1,6 +1,8 @@
 package com.ruru.plastic.user.bean;
 
-import com.ruru.plastic.user.model.CertificateLog;
+import com.ruru.plastic.user.model.Company;
+import com.ruru.plastic.user.model.CorporateCert;
+import com.ruru.plastic.user.model.PersonalCert;
 import com.ruru.plastic.user.response.UserResponse;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,5 +16,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class UserPack extends UserResponse implements Serializable {
     private UserCounter userCounter;
-    private List<CertificateLog> certificateLogList;
+    private PersonalCert personalCert;
+    private CorporateCert corporateCert;
 }

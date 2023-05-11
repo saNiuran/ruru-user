@@ -183,6 +183,9 @@ public class UserServiceImpl implements UserService {
         if (request.getStatus() != null) {
             criteria.andStatusEqualTo(request.getStatus());
         }
+        if(request.getAdminId()!=null){
+            criteria.andAdminIdEqualTo(request.getAdminId());
+        }
     }
 
     @Override

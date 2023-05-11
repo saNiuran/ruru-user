@@ -82,7 +82,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
             }
         } else if (adminRequired != null) {
             // 判断是否存在令牌信息，如果存在，则允许登录
-            String accessToken = request.getHeader(Constants.ACCESS_TOKEN);
+            String accessToken = request.getHeader(Constants.ACCESS_TOKEN_ADMIN);
             if (StringUtils.isEmpty(accessToken)) {
                 throw new CommonException(500, "token错误！");
             } else {
@@ -91,7 +91,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
                 jwt = TokenUtil.deAdminToken(accessToken);
                 Long userId = jwt.getClaim("adminUserId").asLong();
                 // Redis校验token
-                String redisToken = redisService.getUserInfo(userId, UserTypeEnum.Admin.getValue(), "token");
+                String redisToken = redisService.getUserInfo(userId, UserTypeEnum.Admin.getValue(), "adminToken");
                 if (StringUtils.isEmpty(redisToken) || !accessToken.equals(redisToken)) {
                     throw new CommonException(ResponseEnum.ERROR_TOKEN);
                 }

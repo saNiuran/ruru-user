@@ -9,7 +9,9 @@ public class CertificateLog {
 
     private Integer lordType;
 
-    private Long userId;
+    private Long operatorId;
+
+    private Integer operatorType;
 
     private Integer certLevel;
 
@@ -41,12 +43,20 @@ public class CertificateLog {
         this.lordType = lordType;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getOperatorId() {
+        return operatorId;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setOperatorId(Long operatorId) {
+        this.operatorId = operatorId;
+    }
+
+    public Integer getOperatorType() {
+        return operatorType;
+    }
+
+    public void setOperatorType(Integer operatorType) {
+        this.operatorType = operatorType;
     }
 
     public Integer getCertLevel() {

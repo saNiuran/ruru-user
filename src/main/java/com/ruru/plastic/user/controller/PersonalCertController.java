@@ -4,9 +4,12 @@ import com.github.pagehelper.PageInfo;
 import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.enume.CertLordTypeEnum;
+import com.ruru.plastic.user.enume.OperatorTypeEnum;
 import com.ruru.plastic.user.enume.UserCertLevelEnum;
 import com.ruru.plastic.user.model.CertificateLog;
 import com.ruru.plastic.user.model.PersonalCert;
+import com.ruru.plastic.user.model.User;
+import com.ruru.plastic.user.net.CurrentUser;
 import com.ruru.plastic.user.net.LoginRequired;
 import com.ruru.plastic.user.request.PersonalCertRequest;
 import com.ruru.plastic.user.response.DataResponse;
@@ -44,14 +47,15 @@ public class PersonalCertController {
 
     @LoginRequired
     @PostMapping("/new")
-    public DataResponse<PersonalCert> createPersonalCert(@RequestBody PersonalCert personalCert){
+    public DataResponse<PersonalCert> createPersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user){
         Msg<PersonalCert> msg = personalCertService.createPersonalCert(personalCert);
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){
             return DataResponse.error(msg.getErrorMsg());
         }
 
         certificateLogService.createCertificateLog(new CertificateLog(){{
-            setUserId(msg.getData().getUserId());
+            setOperatorType(OperatorTypeEnum.用户.getValue());
+            setOperatorId(user.getId());
             setLordId(msg.getData().getId());
             setLordType(CertLordTypeEnum.身份证.getValue());
             setCertLevel(UserCertLevelEnum.个人认证.getValue());
@@ -63,14 +67,15 @@ public class PersonalCertController {
 
     @LoginRequired
     @PostMapping("/update")
-    public DataResponse<PersonalCert> updatePersonalCert(@RequestBody PersonalCert personalCert){
+    public DataResponse<PersonalCert> updatePersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user){
         Msg<PersonalCert> msg = personalCertService.updatePersonalCert(personalCert);
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){
             return DataResponse.error(msg.getErrorMsg());
         }
 
         certificateLogService.createCertificateLog(new CertificateLog(){{
-            setUserId(msg.getData().getUserId());
+            setOperatorType(OperatorTypeEnum.用户.getValue());
+            setOperatorId(user.getId());
             setLordId(msg.getData().getId());
             setLordType(CertLordTypeEnum.身份证.getValue());
             setCertLevel(UserCertLevelEnum.个人认证.getValue());

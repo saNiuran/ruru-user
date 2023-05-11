@@ -10,11 +10,6 @@ import static com.xiaoleilu.hutool.util.StrUtil.isEmpty;
 
 public class MyStringUtils {
 
-    /**
-     * 隐藏电话号码
-     * @param val
-     * @return
-     */
     public static String getHidePhone(String val) {
         if (isEmpty(val)) {
             return "";
@@ -52,4 +47,6 @@ public class MyStringUtils {
         }
         return true;
     }
+
+
 }

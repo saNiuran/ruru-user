@@ -13,6 +13,6 @@ import java.util.List;
 @ToString
 @EqualsAndHashCode(callSuper = true)
 public class AdminUserResponse extends AdminUser implements Serializable {
-    private String token;
+    private String adminToken;
     private List<Role> roles;
 }

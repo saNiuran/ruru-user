@@ -5,9 +5,13 @@ import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.enume.CertLordTypeEnum;
 import com.ruru.plastic.user.enume.CertStatusEnum;
+import com.ruru.plastic.user.enume.OperatorTypeEnum;
 import com.ruru.plastic.user.enume.UserCertLevelEnum;
+import com.ruru.plastic.user.model.AdminUser;
 import com.ruru.plastic.user.model.CertificateLog;
 import com.ruru.plastic.user.model.PersonalCert;
+import com.ruru.plastic.user.net.AdminRequired;
+import com.ruru.plastic.user.net.CurrentAdminUser;
 import com.ruru.plastic.user.request.PersonalCertRequest;
 import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.response.PersonalCertResponse;
@@ -31,6 +35,7 @@ public class AdminPersonalCertController {
     @Autowired
     private CertificateLogService certificateLogService;
 
+    @AdminRequired
     @PostMapping("/info")
     public DataResponse<PersonalCert> getPersonalCertById(@RequestBody PersonalCert personalCert){
         if(personalCert==null || personalCert.getId()==null){
@@ -43,8 +48,9 @@ public class AdminPersonalCertController {
         return DataResponse.success(personalCertById);
     }
 
+    @AdminRequired
     @PostMapping("/audit/ok")
-    public DataResponse<PersonalCert> createPersonalCert(@RequestBody PersonalCert personalCert){
+    public DataResponse<PersonalCert> createPersonalCert(@RequestBody PersonalCert personalCert, @CurrentAdminUser AdminUser adminUser){
         if(personalCert==null || personalCert.getId()==null){
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
@@ -64,7 +70,8 @@ public class AdminPersonalCertController {
         }
 
         certificateLogService.createCertificateLog(new CertificateLog(){{
-            setUserId(msg.getData().getUserId());
+            setOperatorType(OperatorTypeEnum.管理员.getValue());
+            setOperatorId(adminUser.getId());
             setLordId(msg.getData().getId());
             setCertLevel(UserCertLevelEnum.个人认证.getValue());
             setLordType(CertLordTypeEnum.身份证.getValue());
@@ -74,8 +81,9 @@ public class AdminPersonalCertController {
         return DataResponse.success(msg.getData());
     }
 
+    @AdminRequired
     @PostMapping("/audit/fail")
-    public DataResponse<PersonalCert> updatePersonalCert(@RequestBody PersonalCert personalCert){
+    public DataResponse<PersonalCert> updatePersonalCert(@RequestBody PersonalCert personalCert, @CurrentAdminUser AdminUser adminUser){
         if(personalCert==null || personalCert.getId()==null){
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
@@ -95,7 +103,8 @@ public class AdminPersonalCertController {
         }
 
         certificateLogService.createCertificateLog(new CertificateLog(){{
-            setUserId(msg.getData().getUserId());
+            setOperatorType(OperatorTypeEnum.管理员.getValue());
+            setOperatorId(adminUser.getId());
             setLordId(msg.getData().getId());
             setLordType(CertLordTypeEnum.身份证.getValue());
             setCertLevel(UserCertLevelEnum.个人认证.getValue());
@@ -105,6 +114,7 @@ public class AdminPersonalCertController {
         return DataResponse.success(msg.getData());
     }
 
+    @AdminRequired
     @PostMapping("/delete")
     public DataResponse<Integer> deletePersonalCert(@RequestBody PersonalCert personalCert){
         Msg<Integer> msg = personalCertService.deletePersonalCert(personalCert);
@@ -114,6 +124,7 @@ public class AdminPersonalCertController {
         return DataResponse.success(msg.getData());
     }
 
+    @AdminRequired
     @PostMapping("/filter")
     public DataResponse<PageInfo<PersonalCertResponse>> filterPersonalCertResponse(@RequestBody PersonalCertRequest request){
         return DataResponse.success(personalCertService.filterPersonalCertResponse(request));

@@ -1,8 +1,9 @@
 package com.ruru.plastic.user.model;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class User {
+public class User implements Serializable {
     private Long id;
 
     private Long companyId;
@@ -36,6 +37,8 @@ public class User {
     private Integer certLevel;
 
     private Integer status;
+
+    private Long adminId;
 
     public Long getId() {
         return id;
@@ -171,5 +174,13 @@ public class User {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Long getAdminId() {
+        return adminId;
+    }
+
+    public void setAdminId(Long adminId) {
+        this.adminId = adminId;
     }
 }

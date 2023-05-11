@@ -1,17 +1,15 @@
 package com.ruru.plastic.user.controller;
 
 import com.github.pagehelper.PageInfo;
-import com.ruru.plastic.user.enume.CertStatusEnum;
 import com.ruru.plastic.user.enume.StatusEnum;
+import com.ruru.plastic.user.enume.UserStatusEnum;
 import com.ruru.plastic.user.enume.UserTypeEnum;
 import com.ruru.plastic.user.feign.BidFeignService;
 import com.ruru.plastic.user.feign.SmsFeignService;
-import com.ruru.plastic.user.model.CertificateLog;
-import com.ruru.plastic.user.model.Member;
-import com.ruru.plastic.user.model.User;
-import com.ruru.plastic.user.model.UserAccount;
+import com.ruru.plastic.user.model.*;
 import com.ruru.plastic.user.net.CurrentUser;
 import com.ruru.plastic.user.net.LoginRequired;
+import com.ruru.plastic.user.redis.RedisService;
 import com.ruru.plastic.user.request.LogonRequest;
 import com.ruru.plastic.user.request.UserRequest;
 import com.ruru.plastic.user.response.DataResponse;
@@ -24,7 +22,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Description;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +42,7 @@ public class UserController {
     @Autowired
     private UserAccountService userAccountService;
     @Autowired
-    private StringRedisTemplate redisTemplate;
+    private RedisService redisService;
     @Autowired
     private TokenTask tokenTask;
     @Autowired
@@ -57,7 +54,15 @@ public class UserController {
     @Autowired
     private MemberService memberService;
     @Autowired
-    private CertificateLogService certificateLogService;
+    private UserCorporateCertMatchService userCorporateCertMatchService;
+    @Autowired
+    private PersonalCertService personalCertService;
+    @Autowired
+    private CorporateCertService corporateCertService;
+    @Autowired
+    private ThirdPartyService thirdPartyService;
+    @Autowired
+    private AdminUserService adminUserService;
 
     @LoginRequired
     @PostMapping("/info")
@@ -73,9 +78,22 @@ public class UserController {
         return DataResponse.success(response);
     }
 
+    @PostMapping("/info/uid")
+    public DataResponse<UserResponse> getUserByUid(@RequestBody ThirdParty thirdParty) {
+        if (thirdParty == null || thirdParty.getType() == null || StringUtils.isEmpty(thirdParty.getUid())) {
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+        ThirdParty thirdPartyByTypeAndUid = thirdPartyService.getThirdPartyByTypeAndUid(thirdParty);
+        if (thirdPartyByTypeAndUid == null) {
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+        UserResponse response = getUserResponseById(thirdPartyByTypeAndUid.getUserId());
+        return DataResponse.success(response);
+    }
+
     @LoginRequired
     @PostMapping("/call")
-    public DataResponse<String> callUserById(@RequestBody User user){
+    public DataResponse<String> callUserById(@RequestBody User user) {
         if (user == null || user.getId() == null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
@@ -91,11 +109,22 @@ public class UserController {
 //        userById.setMobile(MyStringUtils.getHidePhone(userById.getMobile()));
 
         UserResponse response = new UserResponse();
-        BeanUtils.copyProperties(userById,response);
+        BeanUtils.copyProperties(userById, response);
         response.setMember(memberService.getValidMemberByUserId(userId));
         response.setUserAccount(userAccountService.getUserAccountByUserId(userId));
-        if(userById.getCompanyId()!=null){
+        if (userById.getCompanyId() != null) {
             response.setCompany(companyService.getCompanyById(userById.getCompanyId()));
+        }
+        PersonalCert personalCertByUserId = personalCertService.getPersonalCertByUserId(userId);
+        if(personalCertByUserId!=null){
+            response.setPersonalCertStatus(personalCertByUserId.getStatus());
+        }
+        UserCorporateCertMatch userCorporateCertMatchByUserId = userCorporateCertMatchService.getUserCorporateCertMatchByUserId(userId);
+        if(userCorporateCertMatchByUserId!=null){
+            CorporateCert corporateCertById = corporateCertService.getCorporateCertById(userCorporateCertMatchByUserId.getCorporateCertId());
+            if(corporateCertById!=null){
+                response.setCorporateCertStatus(corporateCertById.getStatus());
+            }
         }
         return response;
     }
@@ -103,39 +132,41 @@ public class UserController {
     @Description("这个信息最全")
     @LoginRequired
     @PostMapping("/pack")
-    public DataResponse<UserPack> getUserPackById(@RequestBody User user){
-        if(user==null || user.getId()==null){
+    public DataResponse<UserPack> getUserPackById(@RequestBody User user) {
+        if (user == null || user.getId() == null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
         User userById = userService.getUserById(user.getId());
-        if(userById==null){
+        if (userById == null) {
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
 
         UserResponse response = getUserResponseById(user.getId());
 
         UserPack pack = new UserPack();
-        BeanUtils.copyProperties(response,pack);
+        BeanUtils.copyProperties(response, pack);
 
         UserCounter counter = new UserCounter();
         DataResponse<UserCounter> messageDataResponse = smsFeignService.countMessage(user);
-        if(messageDataResponse.getRetCode()==0){
+        if (messageDataResponse.getRetCode() == 0) {
             counter.setMessageCounter(messageDataResponse.getData().getMessageCounter());
             counter.setUnreadMessageCounter(messageDataResponse.getData().getUnreadMessageCounter());
         }
         DataResponse<UserCounter> userCounterDataResponse = bidFeignService.countEnquiryAndQuotation(user);
-        if(userCounterDataResponse.getRetCode()==0){
+        if (userCounterDataResponse.getRetCode() == 0) {
             counter.setEnquiryCounter(userCounterDataResponse.getData().getEnquiryCounter());
             counter.setQuotationCounter(userCounterDataResponse.getData().getQuotationCounter());
             counter.setFavoriteEnquiryCounter(userCounterDataResponse.getData().getFavoriteEnquiryCounter());
         }
         pack.setUserCounter(counter);
 
-        List<CertificateLog> certificateLogList = certificateLogService.queryCertificateLog(new CertificateLog() {{
-            setUserId(user.getId());
-            setCertStatus(CertStatusEnum.审核通过.getValue());
-        }});
-        pack.setCertificateLogList(certificateLogList);
+
+        pack.setPersonalCert(personalCertService.getPersonalCertByUserId(user.getId()));
+
+        UserCorporateCertMatch userCorporateCertMatchByUserId = userCorporateCertMatchService.getUserCorporateCertMatchByUserId(user.getId());
+        if (userCorporateCertMatchByUserId != null) {
+            pack.setCorporateCert(corporateCertService.getCorporateCertById(userCorporateCertMatchByUserId.getCorporateCertId()));
+        }
 
         return DataResponse.success(pack);
     }
@@ -168,8 +199,8 @@ public class UserController {
             return DataResponse.error("无效电话号码");
         }
         //检查smsCode是不是有效  (测试系统，不校验验证码)
-        if(!Arrays.asList("13901655769","18057942731").contains(request.getMobile())) {
-            String s = redisTemplate.opsForValue().get(Constants.SMS_CODE_LOGIN+":" + request.getMobile());
+        if (!Arrays.asList("13901655769", "18057942731","18818881888").contains(request.getMobile())) {
+            String s = redisService.getSmsCode(Constants.SMS_CODE_LOGIN + ":" + request.getMobile());
             if (StringUtils.isEmpty(s)) {
                 return DataResponse.error("验证码已经失效！");
             }
@@ -192,14 +223,20 @@ public class UserController {
             userByMobile = msg.getData();
 
             //开通财务账户 userAccount
-            userAccountService.createUserAccount(new UserAccount(){{
+            userAccountService.createUserAccount(new UserAccount() {{
                 setUserId(msg.getData().getId());
             }});
         }
 
         UserResponse response = new UserResponse();
         BeanUtils.copyProperties(userByMobile, response);
-        response.setToken(tokenTask.createToken(userByMobile.getId(), Integer.parseInt(servletRequest.getHeader("appType")), servletRequest.getHeader("deviceCode"),UserTypeEnum.User.getValue()));
+        response.setToken(tokenTask.createToken(userByMobile.getId(), Integer.parseInt(servletRequest.getHeader("appType")), servletRequest.getHeader("deviceCode"), UserTypeEnum.User.getValue()));
+        if(userByMobile.getAdminId()!=null && userByMobile.getAdminId()>0){
+            AdminUser adminUserById = adminUserService.getAdminUserById(userByMobile.getAdminId());
+            if(adminUserById!=null && adminUserById.getStatus().equals(StatusEnum.可用.getValue())) {
+                response.setAdminToken(tokenTask.createToken(userByMobile.getAdminId(), Integer.parseInt(servletRequest.getHeader("appType")), servletRequest.getHeader("deviceCode"), UserTypeEnum.Admin.getValue()));
+            }
+        }
         return DataResponse.success(response);
     }
 
@@ -210,7 +247,10 @@ public class UserController {
     @LoginRequired
     @RequestMapping(value = "/userLogout", method = RequestMethod.POST)
     public DataResponse<Void> userLogout(@CurrentUser User user) {
-        redisTemplate.delete(Constants.REDIS_KEY_USER_TOKEN + user.getMobile());
+        redisService.expireUserInfo(user.getId(), UserTypeEnum.User.getValue());
+        if (user.getAdminId() != 0) {
+            redisService.expireUserInfo(user.getAdminId(), UserTypeEnum.Admin.getValue());
+        }
         return DataResponse.success(null);
     }
 
@@ -221,23 +261,26 @@ public class UserController {
     @RequestMapping(value = "/userLogOff", method = RequestMethod.POST)
     public DataResponse<Void> userLogOff(@CurrentUser User user) {
         Msg<User> msg = userService.deleteUser(user);
-        if(StringUtils.isNotEmpty(msg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(msg.getErrorMsg())) {
             return DataResponse.error(msg.getErrorMsg());
         }
         //清除token
-        redisTemplate.delete(Constants.REDIS_KEY_USER_TOKEN + user.getMobile());
+        redisService.extendUserInfo(user.getId(), UserTypeEnum.User.getValue());
+        if (user.getAdminId() != 0) {
+            redisService.expireUserInfo(user.getAdminId(), UserTypeEnum.Admin.getValue());
+        }
         //下架此用户的所有信息，包括 询价 和 报价
         pushTask.sendUserLogoff(user);
 
-        return DataResponse.success();
+        return DataResponse.success(null);
     }
 
     @LoginRequired
     @PostMapping("/update")
-    public DataResponse<User> updateUser(@RequestBody User user){
+    public DataResponse<User> updateUser(@RequestBody User user) {
         user.setMobile(null); //这里不能改手机号，手机号更改走单独的接口
         Msg<User> userMsg = userService.updateUser(user);
-        if(StringUtils.isNotEmpty(userMsg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
             return DataResponse.error(userMsg.getErrorMsg());
         }
         return DataResponse.success(userMsg.getData());
@@ -247,21 +290,19 @@ public class UserController {
     @PostMapping("/search")
     public DataResponse<List<Long>> searchUser(@RequestBody UserRequest request) {
         Msg<List<User>> listMsg = userService.searchUser(request);
-        if(StringUtils.isNotEmpty(listMsg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(listMsg.getErrorMsg())) {
             return DataResponse.error(listMsg.getErrorMsg());
         }
         return DataResponse.success(listMsg.getData().stream().map(User::getId).collect(Collectors.toList()));
     }
 
-
-
     @PostMapping("/query/mobiles")
-    public DataResponse<List<String>> queryMobilesByUserIds(@RequestBody UserRequest request){
-        if (request==null || request.getIdList()==null || request.getIdList().size()==0){
+    public DataResponse<List<String>> queryMobilesByUserIds(@RequestBody UserRequest request) {
+        if (request == null || request.getIdList() == null || request.getIdList().size() == 0) {
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
         Msg<List<String>> listMsg = userService.queryMobilesByUserIds(request.getIdList());
-        if(StringUtils.isNotEmpty(listMsg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(listMsg.getErrorMsg())) {
             return DataResponse.error(listMsg.getErrorMsg());
         }
         return DataResponse.success(listMsg.getData());
@@ -270,58 +311,27 @@ public class UserController {
 
     @LoginRequired
     @PostMapping("/update/mobile")
-    public DataResponse<UserResponse> updateUserMobile(@RequestBody MobileUpdateRequest request, @CurrentUser User user, HttpServletRequest servletRequest){
-        if(user.getMobile().equals(request.getNewPhone())){
-            return DataResponse.error("两个手机号码相同");
-        }
+    public DataResponse<Void> updateUserMobile(@RequestBody User mUser, @CurrentUser User user) {
 
-        //检查两个验证码是不是有效
-        //原手机
-        String s = redisTemplate.opsForValue().get(Constants.SMS_CODE_LOGIN+":" + user.getMobile());
-        if (StringUtils.isEmpty(s)) {
-            return DataResponse.error("原手机验证码已经失效！");
-        }
-        if (!s.equals(request.getOldCode())) {
-            return DataResponse.error("原手机验证码错误！");
-        }
-
-        //新手机
-        String s2 = redisTemplate.opsForValue().get(Constants.SMS_CODE_LOGIN+":" + request.getNewPhone());
-        if (StringUtils.isEmpty(s2)) {
-            return DataResponse.error("新手机验证码已经失效！");
-        }
-        if (!s2.equals(request.getNewCode())) {
-            return DataResponse.error("新手机验证码错误！");
-        }
-
-        //校验手机号是不是有效
-        Matcher tmpMatcher = Constants.CHINA_MOBILE_PATTERN.matcher(request.getNewPhone());
-        if (!tmpMatcher.find()) {
-            return DataResponse.error("无效电话号码");
-        }
         //校验这个新手机号码，是不是被他人占用
-        User userByMobile = userService.getValidUserByMobile(request.getNewPhone());
-        if(userByMobile!=null){
+        User userByMobile = userService.getValidUserByMobile(mUser.getMobile());
+        if (userByMobile != null && userByMobile.getStatus().equals(UserStatusEnum.有效.getValue())) {
             return DataResponse.error("新号码已经被注册使用！");
         }
 
         //更新用户信息
-        user.setMobile(request.getNewPhone());
+        user.setMobile(mUser.getMobile());
         Msg<User> userMsg = userService.updateUser(user);
-        if(StringUtils.isNotEmpty(userMsg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
             return DataResponse.error(userMsg.getErrorMsg());
         }
 
-        //刷新token
-        UserResponse response = new UserResponse();
-        BeanUtils.copyProperties(userMsg.getData(), response);
-        response.setToken(tokenTask.createToken(user.getId(), Integer.parseInt(servletRequest.getHeader("appType")), servletRequest.getHeader("deviceCode"), UserTypeEnum.User.getValue()));
-        return DataResponse.success(response);
+        return DataResponse.success(null);
     }
 
 
     @PostMapping("/last/three")
-    public DataResponse<List<User>> queryLastThreeUser(){
+    public DataResponse<List<User>> queryLastThreeUser() {
         PageInfo<User> userPageInfo = userService.filterUser(new UserRequest() {{
             setPage(1);
             setSize(3);
@@ -330,12 +340,12 @@ public class UserController {
     }
 
     @PostMapping("/member/valid")
-    public DataResponse<Boolean> memberValid(@RequestBody User user){
-        if(user==null || user.getId()==null){
+    public DataResponse<Boolean> memberValid(@RequestBody User user) {
+        if (user == null || user.getId() == null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
         Member validMemberByUserId = memberService.getValidMemberByUserId(user.getId());
-        if(validMemberByUserId!=null && validMemberByUserId.getStatus().equals(StatusEnum.可用.getValue())){
+        if (validMemberByUserId != null && validMemberByUserId.getStatus().equals(StatusEnum.可用.getValue())) {
             return DataResponse.success(true);
         }
         return DataResponse.success(false);

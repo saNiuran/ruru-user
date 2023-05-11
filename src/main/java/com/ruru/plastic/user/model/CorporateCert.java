@@ -5,8 +5,6 @@ import java.util.Date;
 public class CorporateCert {
     private Long id;
 
-    private Long userId;
-
     private String name;
 
     private String socialCode;
@@ -25,14 +23,6 @@ public class CorporateCert {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
     }
 
     public String getName() {

@@ -9,8 +9,6 @@ public interface RedisService {
     void expireUserInfo(Long userId, Integer userType);
     void removeUserInfo(Long userId, Integer userType, String paramKey);
 
-    ///////////////////////// sms code time
-    String getSmsCodeTime(String mobile);
-    void setSmsCodeTime(String mobile);
+    String getSmsCode(String key);
 
 }

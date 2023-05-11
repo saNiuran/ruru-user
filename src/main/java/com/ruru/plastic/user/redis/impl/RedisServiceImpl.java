@@ -74,15 +74,8 @@ public class RedisServiceImpl implements RedisService {
 
 
     @Override
-    public String getSmsCodeTime(String mobile) {
-        String key = "getSmsCode:" + mobile;
+    public String getSmsCode(String key) {
         return stringRedisTemplate.opsForValue().get(key);
     }
-
-    @Override
-    public void setSmsCodeTime(String mobile) {
-        stringRedisTemplate.opsForValue().set("getSmsCode:" + mobile, "1", 1, TimeUnit.MINUTES);
-    }
-
 
 }

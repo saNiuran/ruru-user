@@ -285,63 +285,123 @@ public class CertificateLogExample {
             return (Criteria) this;
         }
 
-        public Criteria andUserIdIsNull() {
-            addCriterion("user_id is null");
+        public Criteria andOperatorIdIsNull() {
+            addCriterion("operator_id is null");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdIsNotNull() {
-            addCriterion("user_id is not null");
+        public Criteria andOperatorIdIsNotNull() {
+            addCriterion("operator_id is not null");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdEqualTo(Long value) {
-            addCriterion("user_id =", value, "userId");
+        public Criteria andOperatorIdEqualTo(Long value) {
+            addCriterion("operator_id =", value, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdNotEqualTo(Long value) {
-            addCriterion("user_id <>", value, "userId");
+        public Criteria andOperatorIdNotEqualTo(Long value) {
+            addCriterion("operator_id <>", value, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdGreaterThan(Long value) {
-            addCriterion("user_id >", value, "userId");
+        public Criteria andOperatorIdGreaterThan(Long value) {
+            addCriterion("operator_id >", value, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdGreaterThanOrEqualTo(Long value) {
-            addCriterion("user_id >=", value, "userId");
+        public Criteria andOperatorIdGreaterThanOrEqualTo(Long value) {
+            addCriterion("operator_id >=", value, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdLessThan(Long value) {
-            addCriterion("user_id <", value, "userId");
+        public Criteria andOperatorIdLessThan(Long value) {
+            addCriterion("operator_id <", value, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdLessThanOrEqualTo(Long value) {
-            addCriterion("user_id <=", value, "userId");
+        public Criteria andOperatorIdLessThanOrEqualTo(Long value) {
+            addCriterion("operator_id <=", value, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdIn(List<Long> values) {
-            addCriterion("user_id in", values, "userId");
+        public Criteria andOperatorIdIn(List<Long> values) {
+            addCriterion("operator_id in", values, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdNotIn(List<Long> values) {
-            addCriterion("user_id not in", values, "userId");
+        public Criteria andOperatorIdNotIn(List<Long> values) {
+            addCriterion("operator_id not in", values, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdBetween(Long value1, Long value2) {
-            addCriterion("user_id between", value1, value2, "userId");
+        public Criteria andOperatorIdBetween(Long value1, Long value2) {
+            addCriterion("operator_id between", value1, value2, "operatorId");
             return (Criteria) this;
         }
 
-        public Criteria andUserIdNotBetween(Long value1, Long value2) {
-            addCriterion("user_id not between", value1, value2, "userId");
+        public Criteria andOperatorIdNotBetween(Long value1, Long value2) {
+            addCriterion("operator_id not between", value1, value2, "operatorId");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeIsNull() {
+            addCriterion("operator_type is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeIsNotNull() {
+            addCriterion("operator_type is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeEqualTo(Integer value) {
+            addCriterion("operator_type =", value, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeNotEqualTo(Integer value) {
+            addCriterion("operator_type <>", value, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeGreaterThan(Integer value) {
+            addCriterion("operator_type >", value, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeGreaterThanOrEqualTo(Integer value) {
+            addCriterion("operator_type >=", value, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeLessThan(Integer value) {
+            addCriterion("operator_type <", value, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeLessThanOrEqualTo(Integer value) {
+            addCriterion("operator_type <=", value, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeIn(List<Integer> values) {
+            addCriterion("operator_type in", values, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeNotIn(List<Integer> values) {
+            addCriterion("operator_type not in", values, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeBetween(Integer value1, Integer value2) {
+            addCriterion("operator_type between", value1, value2, "operatorType");
+            return (Criteria) this;
+        }
+
+        public Criteria andOperatorTypeNotBetween(Integer value1, Integer value2) {
+            addCriterion("operator_type not between", value1, value2, "operatorType");
             return (Criteria) this;
         }
 

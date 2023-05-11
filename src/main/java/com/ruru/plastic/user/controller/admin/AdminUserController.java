@@ -83,7 +83,7 @@ public class AdminUserController {
             AdminUserResponse response = adminUserService.getAdminUserResponseById(adminUserByUserName.getId());
             assert response != null;
             response.setPassword(null);
-            response.setToken(token);
+            response.setAdminToken(token);
             return DataResponse.success(response);
         }
     }
@@ -205,7 +205,7 @@ public class AdminUserController {
         if(adminUserById!=null){
             redisService.expireUserInfo(adminUser.getId(),UserTypeEnum.Admin.getValue());
         }
-        return DataResponse.success();
+        return DataResponse.success(null);
     }
 
     @AdminRequired
@@ -214,6 +214,11 @@ public class AdminUserController {
         return DataResponse.success(adminUserService.getAdminUserResponseById(adminUser.getId()));
     }
 
+    @AdminRequired
+    @PostMapping("/info/current/simple")
+    public DataResponse<AdminUser> getCurrentAdmin(@CurrentAdminUser AdminUser adminUser) {
+        return DataResponse.success(adminUser);
+    }
 
     @LoginRequired
     @PostMapping("/amI")
@@ -225,27 +230,25 @@ public class AdminUserController {
         return DataResponse.success(adminUserByUser);
     }
 
-    @PostMapping("/query/userId/by/role")
-    public DataResponse<List<Long>> queryUserIdByRoleId(@RequestBody Role role){
-        if(role==null || role.getId()==null){
+    @PostMapping("/query/by/role/name")
+    public DataResponse<List<AdminUser>> queryUserIdByRoleId(@RequestBody Role role){
+        if(role==null || StringUtils.isEmpty(role.getName())){
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
-        Role roleById = roleService.getRoleById(role.getId());
-        if(roleById==null || role.getStatus().equals(StatusEnum.不可用.getValue())){
+        Role roleById = roleService.getRoleByName(role.getName());
+        if(roleById==null || roleById.getStatus().equals(StatusEnum.不可用.getValue())){
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
 
-        List<Long> userIdList = new ArrayList<>();
-
         List<RoleMatch> matchList = roleMatchService.listRoleMatchByRoleId(roleById.getId());
-        List<Long> adminUserIdList = matchList.stream().map(RoleMatch::getAdminUserId).collect(Collectors.toList());
+        List<AdminUser> adminUserList = new ArrayList<>();
 
-        for(Long adminUserId: adminUserIdList){
-            AdminUser adminUserById = adminUserService.getAdminUserById(adminUserId);
+        for(RoleMatch match: matchList){
+            AdminUser adminUserById = adminUserService.getAdminUserById(match.getAdminUserId());
             if(adminUserById!=null && adminUserById.getStatus().equals(StatusEnum.可用.getValue()) && adminUserById.getUserId()!=null){
-                userIdList.add(adminUserById.getUserId());
+                adminUserList.add(adminUserById);
             }
         }
-        return DataResponse.success(userIdList);
+        return DataResponse.success(adminUserList);
     }
 }

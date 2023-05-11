@@ -3,13 +3,16 @@ package com.ruru.plastic.user.controller;
 import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.enume.ResponseEnum;
+import com.ruru.plastic.user.enume.StatusEnum;
 import com.ruru.plastic.user.enume.UserTypeEnum;
+import com.ruru.plastic.user.model.AdminUser;
 import com.ruru.plastic.user.model.ThirdParty;
 import com.ruru.plastic.user.model.User;
 import com.ruru.plastic.user.model.UserAccount;
 import com.ruru.plastic.user.request.ThirdPartyRequest;
 import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.response.UserResponse;
+import com.ruru.plastic.user.service.AdminUserService;
 import com.ruru.plastic.user.service.ThirdPartyService;
 import com.ruru.plastic.user.service.UserAccountService;
 import com.ruru.plastic.user.service.UserService;
@@ -42,6 +45,8 @@ public class ThirdPartyController {
     private TokenTask tokenTask;
     @Autowired
     private StringRedisTemplate redisTemplate;
+    @Autowired
+    private AdminUserService adminUserService;
 
     @Description("注册的时候，先检测是不是已经绑定过；如果绑定过，前端直接调用登录接口；如果没有绑定过，前端调用绑定接口")
     @PostMapping("/register")
@@ -64,13 +69,13 @@ public class ThirdPartyController {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
 
-        if (StringUtils.isEmpty(request.getHeader("app"))) {
+        if (StringUtils.isEmpty(request.getHeader("appType"))) {
             return DataResponse.error("Header App参数错误");
         }
         if (StringUtils.isEmpty(request.getHeader("deviceCode"))) {
             return DataResponse.error("Header device code参数错误");
         }
-        Integer app = Integer.parseInt(request.getHeader("app"));
+        Integer appType = Integer.parseInt(request.getHeader("appType"));
         String deviceCode = request.getHeader("deviceCode");
 
         ThirdParty existedInfo = thirdPartyService.getThirdPartyByTypeAndUid(thirdParty);
@@ -81,37 +86,62 @@ public class ThirdPartyController {
         UserResponse response = new UserResponse();
         User user = userService.getUserById(existedInfo.getUserId());
         BeanUtils.copyProperties(user, response);
-        response.setToken(tokenTask.createToken(user.getId(), app, deviceCode, UserTypeEnum.User.getValue()));
-
+        response.setToken(tokenTask.createToken(user.getId(), appType, deviceCode, UserTypeEnum.User.getValue()));
+        if(user.getAdminId()!=null && user.getAdminId()>0){
+            AdminUser adminUserById = adminUserService.getAdminUserById(user.getAdminId());
+            if(adminUserById!=null && adminUserById.getStatus().equals(StatusEnum.可用.getValue())) {
+                response.setAdminToken(tokenTask.createToken(user.getAdminId(), Integer.parseInt(request.getHeader("appType")), request.getHeader("deviceCode"), UserTypeEnum.Admin.getValue()));
+            }
+        }
         return DataResponse.success(response);
     }
 
     @PostMapping("/bind")
     public DataResponse<UserResponse> bindThirdPartyUser(@RequestBody ThirdPartyRequest request, HttpServletRequest servletRequest) {
-        if (request == null || request.getId() == null || StringUtils.isEmpty(request.getSmsCode())
-                || StringUtils.isEmpty(request.getMobile())) {
+        if (request == null || request.getType() == null || StringUtils.isEmpty(request.getUid())
+                || StringUtils.isEmpty(request.getSmsCode()) || StringUtils.isEmpty(request.getMobile())) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
 
-        ThirdParty thirdPartyById = thirdPartyService.getThirdPartyById(request.getId());
-        if (thirdPartyById == null) {
-            return DataResponse.error(Constants.ERROR_NO_INFO);
+        ThirdParty thirdPartyByTypeAndUid = thirdPartyService.getThirdPartyByTypeAndUid(request);
+        if (thirdPartyByTypeAndUid == null) {
+            Msg<ThirdParty> thirdPartyMsg = thirdPartyService.createThirdParty(new ThirdParty() {{
+                setUid(request.getUid());
+                setType(request.getType());
+                setName(request.getName());
+                setIconurl(request.getIconurl());
+                setGender(request.getGender());
+            }});
+
+            if(StringUtils.isNotEmpty(thirdPartyMsg.getErrorMsg())){
+                return DataResponse.error(thirdPartyMsg.getErrorMsg());
+            }
+            thirdPartyByTypeAndUid = thirdPartyMsg.getData();
         }
 
         //校验smsCode是否有效
-        String s = redisTemplate.opsForValue().get(SMS_CODE_THIRD_PARTY_BIND + request.getMobile());
+        String s = redisTemplate.opsForValue().get(SMS_CODE_THIRD_PARTY_BIND + ":" + request.getMobile());
         if (StringUtils.isEmpty(s) || !request.getSmsCode().equals(s)) {
             return DataResponse.error(ResponseEnum.ERROR_CODE_NOT_EXIST);
         }
 
         User userByMobile = userService.getValidUserByMobile(request.getMobile());
         if (userByMobile != null) {
-            return thirdPartyLogin(thirdPartyService.getThirdPartyById(request.getId()), servletRequest);
+            thirdPartyByTypeAndUid.setUserId(userByMobile.getId());
+            thirdPartyService.updateThirdParty(thirdPartyByTypeAndUid);
+
+            userByMobile.setNickName(thirdPartyByTypeAndUid.getName());
+            userByMobile.setAvatar(thirdPartyByTypeAndUid.getIconurl());
+            userService.updateUser(userByMobile);
+
+            return thirdPartyLogin(thirdPartyService.getThirdPartyById(thirdPartyByTypeAndUid.getId()), servletRequest);
         }
 
         //新用户，创建
         User xUser = new User();
         xUser.setMobile(request.getMobile());
+        xUser.setNickName(thirdPartyByTypeAndUid.getName());
+        xUser.setAvatar(thirdPartyByTypeAndUid.getIconurl());
         Msg<User> userMsg = userService.createUser(xUser);
         if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
             return DataResponse.error(userMsg.getErrorMsg());
@@ -122,8 +152,8 @@ public class ThirdPartyController {
             setUserId(userMsg.getData().getId());
         }});
 
-        thirdPartyById.setUserId(userMsg.getData().getId());
-        Msg<ThirdParty> thirdPartyMsg = thirdPartyService.updateThirdParty(thirdPartyById);
+        thirdPartyByTypeAndUid.setUserId(userMsg.getData().getId());
+        Msg<ThirdParty> thirdPartyMsg = thirdPartyService.updateThirdParty(thirdPartyByTypeAndUid);
         if (StringUtils.isNotEmpty(thirdPartyMsg.getErrorMsg())) {
             return DataResponse.error(thirdPartyMsg.getErrorMsg());
         }

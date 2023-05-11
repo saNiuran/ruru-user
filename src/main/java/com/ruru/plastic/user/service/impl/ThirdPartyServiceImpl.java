@@ -54,10 +54,8 @@ public class ThirdPartyServiceImpl implements ThirdPartyService {
         }
         ThirdParty dbThirdParty = getThirdPartyByTypeAndUid(thirdParty);
         if (dbThirdParty == null) {
-            dbThirdParty = new ThirdParty();
-            BeanUtils.copyProperties(thirdParty, dbThirdParty);
-            thirdPartyMapper.insertSelective(dbThirdParty);
-            return Msg.success(getThirdPartyById(dbThirdParty.getId()));
+            thirdPartyMapper.insertSelective(thirdParty);
+            return Msg.success(getThirdPartyById(thirdParty.getId()));
         } else {
             thirdParty.setId(dbThirdParty.getId());
             return updateThirdParty(thirdParty);

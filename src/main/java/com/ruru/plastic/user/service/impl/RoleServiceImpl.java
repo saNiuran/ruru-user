@@ -32,6 +32,13 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public Role getRoleByName(String name){
+        RoleExample example = new RoleExample();
+        example.createCriteria().andNameEqualTo(name);
+        return roleMapper.selectOneByExample(example);
+    }
+
+    @Override
     public Msg<Role> createRole(Role role){
         if(role==null || StringUtils.isEmpty(role.getName())){
             return Msg.error(Constants.ERROR_PARAMETER);

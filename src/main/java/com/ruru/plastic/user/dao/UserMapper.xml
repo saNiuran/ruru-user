@@ -19,6 +19,7 @@
     <result column="member_level" property="memberLevel" jdbcType="INTEGER" />
     <result column="cert_level" property="certLevel" jdbcType="INTEGER" />
     <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="admin_id" property="adminId" jdbcType="BIGINT" />
   </resultMap>
   <sql id="Example_Where_Clause" >
     <where >
@@ -80,7 +81,7 @@
   </sql>
   <sql id="Base_Column_List" >
     id, company_id, premier, title, mobile, avatar, nick_name, slogan, gender, career, 
-    birthday, create_time, update_time, city, member_level, cert_level, `status`
+    birthday, create_time, update_time, city, member_level, cert_level, `status`, admin_id
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserExample" >
     select
@@ -121,13 +122,13 @@
       slogan, gender, career, 
       birthday, create_time, update_time, 
       city, member_level, cert_level, 
-      `status`)
+      `status`, admin_id)
     values (#{companyId,jdbcType=BIGINT}, #{premier,jdbcType=INTEGER}, #{title,jdbcType=VARCHAR}, 
       #{mobile,jdbcType=VARCHAR}, #{avatar,jdbcType=VARCHAR}, #{nickName,jdbcType=VARCHAR}, 
       #{slogan,jdbcType=VARCHAR}, #{gender,jdbcType=INTEGER}, #{career,jdbcType=VARCHAR}, 
       #{birthday,jdbcType=TIMESTAMP}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, 
       #{city,jdbcType=VARCHAR}, #{memberLevel,jdbcType=INTEGER}, #{certLevel,jdbcType=INTEGER}, 
-      #{status,jdbcType=INTEGER})
+      #{status,jdbcType=INTEGER}, #{adminId,jdbcType=BIGINT})
   </insert>
   <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.User" >
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
@@ -183,6 +184,9 @@
       <if test="status != null" >
         `status`,
       </if>
+      <if test="adminId != null" >
+        admin_id,
+      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
       <if test="companyId != null" >
@@ -232,6 +236,9 @@
       </if>
       <if test="status != null" >
         #{status,jdbcType=INTEGER},
+      </if>
+      <if test="adminId != null" >
+        #{adminId,jdbcType=BIGINT},
       </if>
     </trim>
   </insert>
@@ -295,6 +302,9 @@
       <if test="record.status != null" >
         `status` = #{record.status,jdbcType=INTEGER},
       </if>
+      <if test="record.adminId != null" >
+        admin_id = #{record.adminId,jdbcType=BIGINT},
+      </if>
     </set>
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
@@ -318,7 +328,8 @@
       city = #{record.city,jdbcType=VARCHAR},
       member_level = #{record.memberLevel,jdbcType=INTEGER},
       cert_level = #{record.certLevel,jdbcType=INTEGER},
-      `status` = #{record.status,jdbcType=INTEGER}
+      `status` = #{record.status,jdbcType=INTEGER},
+      admin_id = #{record.adminId,jdbcType=BIGINT}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -374,6 +385,9 @@
       <if test="status != null" >
         `status` = #{status,jdbcType=INTEGER},
       </if>
+      <if test="adminId != null" >
+        admin_id = #{adminId,jdbcType=BIGINT},
+      </if>
     </set>
     where id = #{id,jdbcType=BIGINT}
   </update>
@@ -394,7 +408,8 @@
       city = #{city,jdbcType=VARCHAR},
       member_level = #{memberLevel,jdbcType=INTEGER},
       cert_level = #{certLevel,jdbcType=INTEGER},
-      `status` = #{status,jdbcType=INTEGER}
+      `status` = #{status,jdbcType=INTEGER},
+      admin_id = #{adminId,jdbcType=BIGINT}
     where id = #{id,jdbcType=BIGINT}
   </update>
   <select id="selectOneByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserExample" >

@@ -9,26 +9,20 @@ import com.ruru.plastic.user.enume.CertStatusEnum;
 import com.ruru.plastic.user.model.CorporateCert;
 import com.ruru.plastic.user.model.CorporateCertExample;
 import com.ruru.plastic.user.request.CorporateCertRequest;
-import com.ruru.plastic.user.response.CorporateCertResponse;
 import com.ruru.plastic.user.service.CorporateCertService;
-import com.ruru.plastic.user.service.UserService;
 import com.ruru.plastic.user.utils.NullUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 @Service
 public class CorporateCertServiceImpl implements CorporateCertService {
 
     @Autowired
     private CorporateCertMapper corporateCertMapper;
-    @Autowired
-    private UserService userService;
 
     @Override
     public CorporateCert getCorporateCertById(Long id){
@@ -36,33 +30,21 @@ public class CorporateCertServiceImpl implements CorporateCertService {
     }
 
     @Override
-    public CorporateCertResponse getCorporateCertResponseById(Long id){
-        CorporateCert corporateCertByUserId = getCorporateCertByUserId(id);
-        if(corporateCertByUserId==null){
-            return null;
-        }
-        CorporateCertResponse response = new CorporateCertResponse();
-        BeanUtils.copyProperties(corporateCertByUserId,response);
-        response.setUser(userService.getUserById(corporateCertByUserId.getUserId()));
-        return response;
-    }
-
-    @Override
-    public CorporateCert getCorporateCertByUserId(Long userId){
+    public CorporateCert getCorporateCertBySocialCode(String socialCode){
         CorporateCertExample example = new CorporateCertExample();
-        example.createCriteria().andUserIdEqualTo(userId);
+        example.createCriteria().andSocialCodeEqualTo(socialCode);
         return corporateCertMapper.selectOneByExample(example);
     }
 
     @Override
     public Msg<CorporateCert> createCorporateCert(CorporateCert corporateCert){
-        if(corporateCert==null || corporateCert.getUserId()==null || StringUtils.isEmpty(corporateCert.getSocialCode())
+        if(corporateCert==null || StringUtils.isEmpty(corporateCert.getSocialCode())
                 || StringUtils.isEmpty(corporateCert.getLicenseImgs())){
             return Msg.error(Constants.ERROR_PARAMETER);
         }
 
-        CorporateCert corporateCertByUserId = getCorporateCertByUserId(corporateCert.getUserId());
-        if(corporateCertByUserId!=null){
+        CorporateCert corporateCertBySocialCode = getCorporateCertBySocialCode(corporateCert.getSocialCode());
+        if(corporateCertBySocialCode!=null){
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
         }
 
@@ -93,7 +75,7 @@ public class CorporateCertServiceImpl implements CorporateCertService {
 
         BeanUtils.copyProperties(corporateCert,corporateCertById, NullUtil.getNullPropertyNames(corporateCert));
         CorporateCertExample example = new CorporateCertExample();
-        example.createCriteria().andIdNotEqualTo(corporateCert.getId()).andUserIdEqualTo(corporateCertById.getUserId());
+        example.createCriteria().andIdNotEqualTo(corporateCert.getId()).andSocialCodeEqualTo(corporateCertById.getSocialCode());
         if(corporateCertMapper.countByExample(example)>0){
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
         }
@@ -125,9 +107,6 @@ public class CorporateCertServiceImpl implements CorporateCertService {
         if(request.getId()!=null){
             criteria.andIdEqualTo(request.getId());
         }
-        if(request.getUserId()!=null){
-            criteria.andUserIdEqualTo(request.getUserId());
-        }
         if(StringUtils.isNotEmpty(request.getName())){
             criteria.andNameEqualTo(request.getName());
         }
@@ -155,18 +134,4 @@ public class CorporateCertServiceImpl implements CorporateCertService {
         return new PageInfo<>(corporateCertMapper.selectByExample(example));
     }
 
-    @Override
-    public PageInfo<CorporateCertResponse> filterCorporateCertResponse(CorporateCertRequest request){
-        PageInfo<CorporateCert> pageInfo = filterCorporateCert(request);
-        PageInfo<CorporateCertResponse> responsePageInfo = new PageInfo<>();
-        BeanUtils.copyProperties(pageInfo,responsePageInfo);
-
-        List<CorporateCertResponse> responseList = new ArrayList<>();
-
-        for(CorporateCert corporateCert: pageInfo.getList()){
-            responseList.add(getCorporateCertResponseById(corporateCert.getId()));
-        }
-        responsePageInfo.setList(responseList);
-        return responsePageInfo;
-    }
 }

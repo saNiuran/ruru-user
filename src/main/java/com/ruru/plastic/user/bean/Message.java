@@ -9,13 +9,15 @@ public class Message {
 
     private Integer operatorType;
 
+    private Long operatorId;
+
+    private String title;
+
     private String content;
 
     private Integer type;
 
     private Integer read;
-
-    private Integer pushStatus;
 
     private Date createTime;
 
@@ -47,6 +49,22 @@ public class Message {
         this.operatorType = operatorType;
     }
 
+    public Long getOperatorId() {
+        return operatorId;
+    }
+
+    public void setOperatorId(Long operatorId) {
+        this.operatorId = operatorId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public String getContent() {
         return content;
     }
@@ -69,14 +87,6 @@ public class Message {
 
     public void setRead(Integer read) {
         this.read = read;
-    }
-
-    public Integer getPushStatus() {
-        return pushStatus;
-    }
-
-    public void setPushStatus(Integer pushStatus) {
-        this.pushStatus = pushStatus;
     }
 
     public Date getCreateTime() {

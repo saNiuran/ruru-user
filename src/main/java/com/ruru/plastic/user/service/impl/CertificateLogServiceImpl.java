@@ -77,6 +77,12 @@ public class CertificateLogServiceImpl implements CertificateLogService {
         if(request.getLordType()!=null){
             criteria.andLordTypeEqualTo(request.getLordType());
         }
+        if(request.getOperatorId()!=null){
+            criteria.andOperatorIdEqualTo(request.getOperatorId());
+        }
+        if(request.getOperatorType()!=null){
+            criteria.andOperatorTypeEqualTo(request.getOperatorType());
+        }
         if(request.getCertStatus()!=null){
             criteria.andCertStatusEqualTo(request.getCertStatus());
         }

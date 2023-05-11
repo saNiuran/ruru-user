@@ -1,26 +1,18 @@
 package com.ruru.plastic.user.task;
 
-import com.ruru.plastic.user.enume.AppTypeEnum;
 import com.ruru.plastic.user.enume.UserTypeEnum;
 import com.ruru.plastic.user.redis.RedisService;
 import com.ruru.plastic.user.utils.TokenUtil;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.TimeUnit;
 
-import static com.ruru.plastic.user.bean.Constants.REDIS_KEY_USER_TOKEN;
 
 @Component
 public class TokenTask {
     @Autowired
-    private StringRedisTemplate template;
-    @Autowired
     private RedisService redisService;
-    @Autowired
-    private PushTask pushTask;
 
     /**
      * 创建user Token
@@ -73,7 +65,7 @@ public class TokenTask {
         if(StringUtils.isNotEmpty(token)) {
             redisService.setUserInfo(userId, userType, "token", token);
             redisService.setUserInfo(userId, userType, "appType", appType.toString());
-            redisService.setUserInfo(userId, userType, "token", token);
+            redisService.setUserInfo(userId, userType, "deviceCode", deviceCode);
             redisService.extendUserInfo(userId, userType);
         }else{
             redisService.expireUserInfo(userId,userType);
@@ -82,7 +74,4 @@ public class TokenTask {
         return token;
     }
 
-    public void invalidToken(Long userId, Integer userType) {
-        redisService.removeUserInfo(userId, userType, "token");
-    }
 }
