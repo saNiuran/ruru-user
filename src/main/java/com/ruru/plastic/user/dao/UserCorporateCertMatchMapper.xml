@@ -5,6 +5,7 @@
     <id column="id" property="id" jdbcType="BIGINT" />
     <result column="user_id" property="userId" jdbcType="BIGINT" />
     <result column="corporate_cert_id" property="corporateCertId" jdbcType="BIGINT" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
   </resultMap>
   <sql id="Example_Where_Clause" >
     <where >
@@ -65,7 +66,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, user_id, corporate_cert_id
+    id, user_id, corporate_cert_id, create_time
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserCorporateCertMatchExample" >
     select
@@ -101,8 +102,10 @@
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into user_corporate_cert_match (user_id, corporate_cert_id)
-    values (#{userId,jdbcType=BIGINT}, #{corporateCertId,jdbcType=BIGINT})
+    insert into user_corporate_cert_match (user_id, corporate_cert_id, create_time
+      )
+    values (#{userId,jdbcType=BIGINT}, #{corporateCertId,jdbcType=BIGINT}, #{createTime,jdbcType=TIMESTAMP}
+      )
   </insert>
   <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.UserCorporateCertMatch" >
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
@@ -116,6 +119,9 @@
       <if test="corporateCertId != null" >
         corporate_cert_id,
       </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
       <if test="userId != null" >
@@ -123,6 +129,9 @@
       </if>
       <if test="corporateCertId != null" >
         #{corporateCertId,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
       </if>
     </trim>
   </insert>
@@ -144,6 +153,9 @@
       <if test="record.corporateCertId != null" >
         corporate_cert_id = #{record.corporateCertId,jdbcType=BIGINT},
       </if>
+      <if test="record.createTime != null" >
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
     </set>
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
@@ -153,7 +165,8 @@
     update user_corporate_cert_match
     set id = #{record.id,jdbcType=BIGINT},
       user_id = #{record.userId,jdbcType=BIGINT},
-      corporate_cert_id = #{record.corporateCertId,jdbcType=BIGINT}
+      corporate_cert_id = #{record.corporateCertId,jdbcType=BIGINT},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -167,13 +180,17 @@
       <if test="corporateCertId != null" >
         corporate_cert_id = #{corporateCertId,jdbcType=BIGINT},
       </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
     </set>
     where id = #{id,jdbcType=BIGINT}
   </update>
   <update id="updateByPrimaryKey" parameterType="com.ruru.plastic.user.model.UserCorporateCertMatch" >
     update user_corporate_cert_match
     set user_id = #{userId,jdbcType=BIGINT},
-      corporate_cert_id = #{corporateCertId,jdbcType=BIGINT}
+      corporate_cert_id = #{corporateCertId,jdbcType=BIGINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP}
     where id = #{id,jdbcType=BIGINT}
   </update>
   <select id="selectOneByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserCorporateCertMatchExample" >

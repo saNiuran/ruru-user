@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.util.Date;
 
 @Data
 @ToString
@@ -13,4 +14,7 @@ import java.io.Serializable;
 public class UserCorporateCertMatchRequest extends UserCorporateCertMatch implements Serializable {
     private Integer page;
     private Integer size;
+    private Date startTime;
+    private Date endTime;
+    private String orderClause;
 }

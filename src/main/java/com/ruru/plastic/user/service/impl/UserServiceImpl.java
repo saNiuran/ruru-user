@@ -36,6 +36,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User getUserByAdminUserId(Long adminId) {
+        UserExample example = new UserExample();
+        example.createCriteria().andAdminIdEqualTo(adminId);
+        return userMapper.selectOneByExample(example);
+    }
+
+    @Override
     public User getUserByMobile(String mobile){
         UserExample example = new UserExample();
         example.createCriteria().andMobileEqualTo(mobile);
@@ -117,7 +124,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Msg<User> deleteUser(@NotNull User user) {
-        user.setStatus(UserStatusEnum.失效.getValue());
+        user.setStatus(UserStatusEnum.注销.getValue());
         return updateUser(user);
     }
 

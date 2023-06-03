@@ -1,10 +1,13 @@
 package com.ruru.plastic.user.controller;
 
 import com.github.pagehelper.PageInfo;
+import com.ruru.plastic.user.enume.EnquiryEventTypeEnum;
 import com.ruru.plastic.user.enume.StatusEnum;
 import com.ruru.plastic.user.enume.UserStatusEnum;
 import com.ruru.plastic.user.enume.UserTypeEnum;
 import com.ruru.plastic.user.feign.BidFeignService;
+import com.ruru.plastic.user.feign.ConfigFeignService;
+import com.ruru.plastic.user.feign.FinanceFeignService;
 import com.ruru.plastic.user.feign.SmsFeignService;
 import com.ruru.plastic.user.model.*;
 import com.ruru.plastic.user.net.CurrentUser;
@@ -18,6 +21,7 @@ import com.ruru.plastic.user.task.PushTask;
 import com.ruru.plastic.user.task.TokenTask;
 import com.ruru.plastic.user.bean.*;
 import com.ruru.plastic.user.service.*;
+import com.xiaoleilu.hutool.date.DateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -63,6 +68,10 @@ public class UserController {
     private ThirdPartyService thirdPartyService;
     @Autowired
     private AdminUserService adminUserService;
+    @Autowired
+    private ConfigFeignService configFeignService;
+    @Autowired
+    private FinanceFeignService financeFeignService;
 
     @LoginRequired
     @PostMapping("/info")
@@ -89,6 +98,18 @@ public class UserController {
         }
         UserResponse response = getUserResponseById(thirdPartyByTypeAndUid.getUserId());
         return DataResponse.success(response);
+    }
+
+    @PostMapping("/info/admin/simple")
+    public DataResponse<User> getUserByAdminUserId(@RequestBody User user){
+        if(user==null || user.getAdminId()==null){
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+        User userByAdminUserId = userService.getUserByAdminUserId(user.getAdminId());
+        if(userByAdminUserId==null){
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+        return DataResponse.success(userByAdminUserId);
     }
 
     @LoginRequired
@@ -210,7 +231,7 @@ public class UserController {
         }
 
         //检查是不是已经有用户 且有效的
-        User userByMobile = userService.getValidUserByMobile(request.getMobile());
+        User userByMobile = userService.getUserByMobile(request.getMobile());
         if (userByMobile == null) {
             //新用户
             userByMobile = new User();
@@ -226,6 +247,33 @@ public class UserController {
             userAccountService.createUserAccount(new UserAccount() {{
                 setUserId(msg.getData().getId());
             }});
+        }else if(userByMobile.getStatus().equals(UserStatusEnum.注销.getValue())){
+            if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-15).getTime()) {
+                //刚注销15天，给反悔期15天
+                userByMobile.setStatus(UserStatusEnum.有效.getValue());
+                userService.updateUser(userByMobile);
+//            }else if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-365).getTime()){
+//                //小于1年，不让再注册
+//                return DataResponse.error("您的账户已主动注销，在1年内无法再注册和登录");
+            }else{
+                //超出15天反悔期
+                userByMobile.setMobile(userByMobile.getMobile()+".");  //把原来的电话+小数点
+                userService.updateUser(userByMobile);
+
+                userByMobile = new User();
+                BeanUtils.copyProperties(request, userByMobile);
+                Msg<User> msg = userService.createUser(userByMobile);
+                if (StringUtils.isNotEmpty(msg.getErrorMsg())) {
+                    return DataResponse.error(msg.getErrorMsg());
+                }
+
+                userByMobile = msg.getData();
+
+                //开通财务账户 userAccount
+                userAccountService.createUserAccount(new UserAccount() {{
+                    setUserId(msg.getData().getId());
+                }});
+            }
         }
 
         UserResponse response = new UserResponse();
@@ -239,7 +287,6 @@ public class UserController {
         }
         return DataResponse.success(response);
     }
-
 
     /**
      * 用户退出登录
@@ -279,6 +326,7 @@ public class UserController {
     @PostMapping("/update")
     public DataResponse<User> updateUser(@RequestBody User user) {
         user.setMobile(null); //这里不能改手机号，手机号更改走单独的接口
+        user.setAdminId(null);  //防止被篡改管理员去权限
         Msg<User> userMsg = userService.updateUser(user);
         if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
             return DataResponse.error(userMsg.getErrorMsg());
@@ -314,8 +362,8 @@ public class UserController {
     public DataResponse<Void> updateUserMobile(@RequestBody User mUser, @CurrentUser User user) {
 
         //校验这个新手机号码，是不是被他人占用
-        User userByMobile = userService.getValidUserByMobile(mUser.getMobile());
-        if (userByMobile != null && userByMobile.getStatus().equals(UserStatusEnum.有效.getValue())) {
+        User userByMobile = userService.getUserByMobile(mUser.getMobile());
+        if (userByMobile != null && !userByMobile.getStatus().equals(UserStatusEnum.失效.getValue())) {
             return DataResponse.error("新号码已经被注册使用！");
         }
 
@@ -350,4 +398,104 @@ public class UserController {
         }
         return DataResponse.success(false);
     }
+
+    @LoginRequired
+    @PostMapping("/privilege/check")
+    public DataResponse<Integer> checkMyPrivilege(@RequestBody EnquiryEventLog enquiryEventLog, @CurrentUser User me){
+        if(enquiryEventLog==null || enquiryEventLog.getEventType()==null){
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+        if(!enquiryEventLog.getEventType().equals(EnquiryEventTypeEnum.发布.getValue()) && enquiryEventLog.getEnquiryId()==null){
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+
+        //检查此次事件是否当日重复事件
+        if(!enquiryEventLog.getEventType().equals(EnquiryEventTypeEnum.发布.getValue())) {        //非发布询价动作
+            DataResponse<Integer> logOfTodayDataResponse = bidFeignService.sameEnquiryEventLogOfToday(new EnquiryEventLog() {{
+                setEnquiryId(enquiryEventLog.getEnquiryId());
+                setUserId(me.getId());
+                setEventType(enquiryEventLog.getEventType());
+            }});
+
+            if (logOfTodayDataResponse.getRetCode() != 0) {
+                return DataResponse.error(logOfTodayDataResponse.getMessage());
+            }
+
+            if (logOfTodayDataResponse.getData().equals(1)) {  //今天此条信息操作有重复的，不检查权限
+                return DataResponse.success(1);
+            }
+        }
+
+        //下面表示是不重复，继续检查
+        UserResponse userResponseById = getUserResponseById(me.getId());
+        Privilege mPrivilege = new Privilege();
+        mPrivilege.setAction(enquiryEventLog.getEventType());
+        mPrivilege.setMemberLevel(userResponseById.getMemberLevel());
+        Long deposit = userResponseById.getUserAccount().getDeposit();
+        if(deposit==null || deposit==0){
+            mPrivilege.setDepositConfigId(0L);
+        }else{
+            DataResponse<List<DepositConfig>> listDataResponse = financeFeignService.listValidDepositConfig();
+            if(listDataResponse.getRetCode()!=0){
+                return DataResponse.error(listDataResponse.getMessage());
+            }
+            mPrivilege.setDepositConfigId(0L);
+            for(DepositConfig config: listDataResponse.getData()){
+                if(config.getAmount()<=deposit){
+                    mPrivilege.setDepositConfigId(config.getId());
+                }else{
+                    break;
+                }
+            }
+        }
+        DataResponse<List<Privilege>> dataResponse = configFeignService.queryPrivilege(mPrivilege);
+        if(dataResponse.getRetCode()!=0){
+            return DataResponse.error(dataResponse.getMessage());
+        }
+
+        if(dataResponse.getData().size()>0){
+            mPrivilege = dataResponse.getData().get(0);
+
+            if(mPrivilege.getValue()==null){
+                return DataResponse.success(0);
+            }else if(mPrivilege.getValue()==0){
+                return DataResponse.success(1);
+            }else{
+                //检查数字有没有超出
+                DataResponse<EventCounter> dataResponse1 = bidFeignService.countEnquiryAndQuotationOfToday(new User() {{
+                    setId(me.getId());
+                }});
+                if(dataResponse1.getRetCode()!=0){
+                    return DataResponse.error(dataResponse1.getMessage());
+                }
+                EventCounter counter  = dataResponse1.getData();
+                boolean result = true;
+                switch (EnquiryEventTypeEnum.getEnum(enquiryEventLog.getEventType())){
+                    case 发布:
+                        if(counter.getEnquiryPostCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                    case 报价:
+                        if(counter.getQuotationCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                    case 查看:
+                        if(counter.getEnquiryCheckCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                    case 打电话:
+                        if(counter.getEnquiryCallCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                }
+                return DataResponse.success(result?1:0);
+            }
+        }
+        return DataResponse.error("权限配置错误！");
+    }
+
 }

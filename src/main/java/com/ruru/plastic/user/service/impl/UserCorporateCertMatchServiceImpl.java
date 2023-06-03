@@ -8,20 +8,45 @@ import com.ruru.plastic.user.dao.UserCorporateCertMatchMapper;
 import com.ruru.plastic.user.model.UserCorporateCertMatch;
 import com.ruru.plastic.user.model.UserCorporateCertMatchExample;
 import com.ruru.plastic.user.request.UserCorporateCertMatchRequest;
+import com.ruru.plastic.user.response.UserCorporateCertMatchResponse;
+import com.ruru.plastic.user.service.CorporateCertService;
 import com.ruru.plastic.user.service.UserCorporateCertMatchService;
+import com.ruru.plastic.user.service.UserService;
 import com.ruru.plastic.user.utils.NullUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Service
 public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatchService {
     @Autowired
     private UserCorporateCertMatchMapper userCorporateCertMatchMapper;
+    @Autowired
+    private CorporateCertService corporateCertService;
+    @Autowired
+    private UserService userService;
 
     @Override
     public UserCorporateCertMatch getUserCorporateCertMatchById(Long id){
         return userCorporateCertMatchMapper.selectByPrimaryKey(id);
+    }
+
+    @Override
+    public UserCorporateCertMatchResponse getUserCorporateCertMatchResponseById(Long id){
+        UserCorporateCertMatch userCorporateCertMatchById = getUserCorporateCertMatchById(id);
+        if(userCorporateCertMatchById==null){
+            return null;
+        }
+        UserCorporateCertMatchResponse response = new UserCorporateCertMatchResponse();
+        BeanUtils.copyProperties(userCorporateCertMatchById,response);
+        response.setCorporateCert(corporateCertService.getCorporateCertById(userCorporateCertMatchById.getCorporateCertId()));
+        response.setUser(userService.getUserById(userCorporateCertMatchById.getUserId()));
+        return response;
     }
 
     @Override
@@ -42,6 +67,9 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
         }
         userCorporateCertMatch.setId(null);
+        if(userCorporateCertMatch.getCreateTime()==null){
+            userCorporateCertMatch.setCreateTime(new Date());
+        }
         userCorporateCertMatchMapper.insertSelective(userCorporateCertMatch);
         return Msg.success(getUserCorporateCertMatchById(userCorporateCertMatch.getId()));
     }
@@ -96,7 +124,35 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
             criteria.andCorporateCertIdEqualTo(request.getCorporateCertId());
         }
 
+        if(request.getStartTime()!=null){
+            criteria.andCreateTimeGreaterThanOrEqualTo(request.getStartTime());
+        }
+        if(request.getEndTime()!=null){
+            criteria.andCreateTimeLessThanOrEqualTo(request.getEndTime());
+        }
+
+        if(StringUtils.isNotEmpty(request.getOrderClause())){
+            example.setOrderByClause(request.getOrderClause());
+        }else{
+            example.setOrderByClause("create_time desc");
+        }
+
         PageHelper.startPage(request.getPage(),request.getSize());
         return new PageInfo<>(userCorporateCertMatchMapper.selectByExample(example));
+    }
+
+    @Override
+    public PageInfo<UserCorporateCertMatchResponse> filterUserCorporateCertMatchResponse(UserCorporateCertMatchRequest request){
+        PageInfo<UserCorporateCertMatch> pageInfo = filterUserCorporateCertMatch(request);
+        PageInfo<UserCorporateCertMatchResponse> responsePageInfo = new PageInfo<>();
+        BeanUtils.copyProperties(pageInfo,responsePageInfo);
+        List<UserCorporateCertMatchResponse> responseList = new ArrayList<>();
+
+        for(UserCorporateCertMatch match: pageInfo.getList()){
+            responseList.add(getUserCorporateCertMatchResponseById(match.getId()));
+        }
+        responsePageInfo.setList(responseList);
+        return responsePageInfo;
+
     }
 }

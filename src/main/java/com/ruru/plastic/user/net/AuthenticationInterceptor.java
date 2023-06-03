@@ -3,7 +3,7 @@ package com.ruru.plastic.user.net;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.enume.ResponseEnum;
-import com.ruru.plastic.user.enume.StatusEnum;
+import com.ruru.plastic.user.enume.UserStatusEnum;
 import com.ruru.plastic.user.enume.UserTypeEnum;
 import com.ruru.plastic.user.exception.CommonException;
 import com.ruru.plastic.user.model.AdminUser;
@@ -21,6 +21,8 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
+
+import static com.ruru.plastic.user.enume.ResponseEnum.*;
 
 public class AuthenticationInterceptor implements HandlerInterceptor {
 
@@ -48,7 +50,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
             // 判断是否存在令牌信息，如果存在，则允许登录
             String accessToken = request.getHeader(Constants.ACCESS_TOKEN);
             if (StringUtils.isEmpty(accessToken)) {
-                throw new CommonException(500, "token错误！");
+                throw new CommonException(EMPTY_TOKEN);
             } else {
                 // jwt校验token
                 DecodedJWT jwt;
@@ -63,15 +65,15 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
                 User user = userService.getUserById(userId);
                 //用户不存在
                 if (user == null) {
-                    throw new CommonException(401, "用户不存在！");
+                    throw new CommonException(ERROR_USER_NOT_EXIST);
                 }
                 //用户不可用
-                if (StatusEnum.不可用.getValue().equals(user.getStatus())) {
-                    throw new CommonException(401, "用户被禁止登陆");
+                if (!UserStatusEnum.有效.getValue().equals(user.getStatus())) {
+                    throw new CommonException(ERROR_USER_FORBIDDEN);
                 }
                 int appType = jwt.getClaim("appType").asInt();
                 if (!(appType+"").equals(request.getHeader("appType"))) {
-                    throw new CommonException(401, "终端不匹配！");
+                    throw new CommonException(ERROR_TOKEN);
                 }
 
                 // 当前登录用户@CurrentUser
@@ -84,14 +86,14 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
             // 判断是否存在令牌信息，如果存在，则允许登录
             String accessToken = request.getHeader(Constants.ACCESS_TOKEN_ADMIN);
             if (StringUtils.isEmpty(accessToken)) {
-                throw new CommonException(500, "token错误！");
+                throw new CommonException(EMPTY_TOKEN);
             } else {
                 // jwt校验token
                 DecodedJWT jwt;
                 jwt = TokenUtil.deAdminToken(accessToken);
                 Long userId = jwt.getClaim("adminUserId").asLong();
                 // Redis校验token
-                String redisToken = redisService.getUserInfo(userId, UserTypeEnum.Admin.getValue(), "adminToken");
+                String redisToken = redisService.getUserInfo(userId, UserTypeEnum.Admin.getValue(), "token");
                 if (StringUtils.isEmpty(redisToken) || !accessToken.equals(redisToken)) {
                     throw new CommonException(ResponseEnum.ERROR_TOKEN);
                 }
@@ -99,15 +101,15 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
                 AdminUser adminUser = adminUserService.getAdminUserById(userId);
                 //用户不存在
                 if (adminUser == null) {
-                    throw new CommonException(401, "用户不存在！");
+                    throw new CommonException(ERROR_USER_NOT_EXIST);
                 }
                 //用户不可用
-                if (StatusEnum.不可用.getValue().equals(adminUser.getStatus())) {
-                    throw new CommonException(401, "用户被禁止登陆");
+                if (!UserStatusEnum.有效.getValue().equals(adminUser.getStatus())) {
+                    throw new CommonException(ERROR_USER_FORBIDDEN);
                 }
                 int appType = jwt.getClaim("appType").asInt();
                 if (!(appType+"").equals(request.getHeader("appType"))) {
-                    throw new CommonException(401, "终端不匹配！");
+                    throw new CommonException(ERROR_TOKEN);
                 }
 
                 // 当前登录用户@CurrentUser

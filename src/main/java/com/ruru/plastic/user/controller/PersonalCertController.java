@@ -3,9 +3,8 @@ package com.ruru.plastic.user.controller;
 import com.github.pagehelper.PageInfo;
 import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.bean.Msg;
-import com.ruru.plastic.user.enume.CertLordTypeEnum;
-import com.ruru.plastic.user.enume.OperatorTypeEnum;
-import com.ruru.plastic.user.enume.UserCertLevelEnum;
+import com.ruru.plastic.user.bean.PushBody;
+import com.ruru.plastic.user.enume.*;
 import com.ruru.plastic.user.model.CertificateLog;
 import com.ruru.plastic.user.model.PersonalCert;
 import com.ruru.plastic.user.model.User;
@@ -16,6 +15,7 @@ import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.response.PersonalCertResponse;
 import com.ruru.plastic.user.service.CertificateLogService;
 import com.ruru.plastic.user.service.PersonalCertService;
+import com.ruru.plastic.user.task.CertTask;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,14 +23,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
-@RequestMapping("/personal/auth")
+@RequestMapping("/personal/cert")
 public class PersonalCertController {
     
     @Autowired
     private PersonalCertService personalCertService;
     @Autowired
     private CertificateLogService certificateLogService;
+    @Autowired
+    private CertTask certTask;
 
     @LoginRequired
     @PostMapping("/info")
@@ -46,8 +52,19 @@ public class PersonalCertController {
     }
 
     @LoginRequired
+    @PostMapping("/info/my")
+    public DataResponse<PersonalCert> getMyPersonalCert(@CurrentUser User user){
+        PersonalCert personalCertByUserId = personalCertService.getPersonalCertByUserId(user.getId());
+        if(personalCertByUserId==null){
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+        return DataResponse.success(personalCertByUserId);
+    }
+
+    @LoginRequired
     @PostMapping("/new")
     public DataResponse<PersonalCert> createPersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user){
+        personalCert.setUserId(user.getId());
         Msg<PersonalCert> msg = personalCertService.createPersonalCert(personalCert);
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){
             return DataResponse.error(msg.getErrorMsg());
@@ -62,12 +79,37 @@ public class PersonalCertController {
             setCertStatus(msg.getData().getStatus());
         }});
 
+        //创建管理员通知消息
+        certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理,null);
+
+        certTask.createPush(new PushBody() {{
+            setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理);
+            setUserIds(Collections.singletonList(0L));
+
+            Map<String, String> extras = new HashMap<>();
+            extras.put("id", msg.getData().getId().toString());
+            extras.put("notifyCode", NotifyCodeEnum.个人认证_待审核_管理.getCode());
+            setExtras(extras);
+        }});
+
         return DataResponse.success(msg.getData());
     }
 
     @LoginRequired
     @PostMapping("/update")
     public DataResponse<PersonalCert> updatePersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user){
+        PersonalCert personalCertByUserId = personalCertService.getPersonalCertByUserId(user.getId());
+        if(personalCertByUserId==null){
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+
+        if(personalCertByUserId.getStatus().equals(CertStatusEnum.审核通过.getValue())
+                || personalCertByUserId.getStatus().equals(CertStatusEnum.失效.getValue())){
+            return DataResponse.error("当前状态为"+CertStatusEnum.getEnum(personalCertByUserId.getStatus())+"，不能修改！");
+        }
+
+        personalCert.setId(personalCertByUserId.getId());
+        personalCert.setStatus(CertStatusEnum.待审核.getValue());
         Msg<PersonalCert> msg = personalCertService.updatePersonalCert(personalCert);
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){
             return DataResponse.error(msg.getErrorMsg());
@@ -80,6 +122,19 @@ public class PersonalCertController {
             setLordType(CertLordTypeEnum.身份证.getValue());
             setCertLevel(UserCertLevelEnum.个人认证.getValue());
             setCertStatus(msg.getData().getStatus());
+        }});
+
+        //创建管理员通知消息
+        certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理,null);
+
+        certTask.createPush(new PushBody() {{
+            setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理);
+            setUserIds(Collections.singletonList(0L));
+
+            Map<String, String> extras = new HashMap<>();
+            extras.put("id", msg.getData().getId().toString());
+            extras.put("notifyCode", NotifyCodeEnum.个人认证_待审核_管理.getCode());
+            setExtras(extras);
         }});
 
         return DataResponse.success(msg.getData());

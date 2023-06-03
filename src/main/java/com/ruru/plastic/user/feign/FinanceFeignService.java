@@ -1,5 +1,6 @@
 package com.ruru.plastic.user.feign;
 
+import com.ruru.plastic.user.bean.DepositConfig;
 import com.ruru.plastic.user.bean.Message;
 import com.ruru.plastic.user.bean.PushBody;
 import com.ruru.plastic.user.bean.UserCounter;
@@ -10,17 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.List;
 
-@FeignClient(value = "PLASTIC-SMS-SERVICE")
+
+@FeignClient(value = "PLASTIC-FINANCE-SERVICE")
 @Service
-public interface SmsFeignService {
+public interface FinanceFeignService {
 
-    @PostMapping("/message/new")
-    DataResponse<Message> createMessage(@RequestBody Message message);
-
-    @PostMapping("/message/count")
-    DataResponse<UserCounter> countMessage(@RequestBody User user);
-
-    @PostMapping("/push/bean/pool/new")
-    DataResponse<Void> createPush(@RequestBody PushBody pushBody);
+    @PostMapping("/deposit/config/list/valid")
+    DataResponse<List<DepositConfig>> listValidDepositConfig();
 }

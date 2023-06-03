@@ -37,7 +37,6 @@ public class UserAccountController {
         return DataResponse.success(userAccountByUserId);
     }
 
-    @LoginRequired
     @PostMapping("/deposit/increase")
     public DataResponse<UserAccount> increaseDeposit(@RequestBody UserAccount userAccount){
         Msg<UserAccount> msg = userAccountService.increaseDeposit(userAccount.getUserId(), userAccount.getDeposit());
@@ -47,7 +46,6 @@ public class UserAccountController {
         return DataResponse.success(msg.getData());
     }
 
-    @LoginRequired
     @PostMapping("/deposit/decrease")
     public DataResponse<UserAccount> decreaseDeposit(@RequestBody UserAccount userAccount){
         Msg<UserAccount> msg = userAccountService.decreaseDeposit(userAccount.getUserId(), userAccount.getDeposit());

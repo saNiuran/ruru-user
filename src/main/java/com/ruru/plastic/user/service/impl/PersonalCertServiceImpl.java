@@ -56,7 +56,7 @@ public class PersonalCertServiceImpl implements PersonalCertService {
 
     @Override
     public Msg<PersonalCert> createPersonalCert(PersonalCert personalCert){
-        if(personalCert==null || personalCert.getUserId()==null || StringUtils.isEmpty(personalCert.getCertificateNo())
+        if(personalCert==null || personalCert.getUserId()==null
                 || StringUtils.isEmpty(personalCert.getIdCardFrontImg()) || StringUtils.isEmpty(personalCert.getIdCardBackImg())){
             return Msg.error(Constants.ERROR_PARAMETER);
         }

@@ -1,7 +1,7 @@
 package com.ruru.plastic.user.enume;
 
 public enum OperatorTypeEnum {
-    用户(0), 管理员(1), 系统(2);
+    用户(0), 工作人员(1), 系统(2);
     private final Integer value;
 
     OperatorTypeEnum(Integer value) {

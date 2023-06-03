@@ -220,16 +220,6 @@ public class AdminUserController {
         return DataResponse.success(adminUser);
     }
 
-    @LoginRequired
-    @PostMapping("/amI")
-    public DataResponse<AdminUser> amIAdminUser(@CurrentUser User user) {
-        AdminUser adminUserByUser = adminUserService.getAdminUserByUser(user.getId());
-        if (adminUserByUser == null) {
-            return DataResponse.error(Constants.ERROR_NO_INFO);
-        }
-        return DataResponse.success(adminUserByUser);
-    }
-
     @PostMapping("/query/by/role/name")
     public DataResponse<List<AdminUser>> queryUserIdByRoleId(@RequestBody Role role){
         if(role==null || StringUtils.isEmpty(role.getName())){
@@ -245,7 +235,7 @@ public class AdminUserController {
 
         for(RoleMatch match: matchList){
             AdminUser adminUserById = adminUserService.getAdminUserById(match.getAdminUserId());
-            if(adminUserById!=null && adminUserById.getStatus().equals(StatusEnum.可用.getValue()) && adminUserById.getUserId()!=null){
+            if(adminUserById!=null && adminUserById.getStatus().equals(StatusEnum.可用.getValue())){
                 adminUserList.add(adminUserById);
             }
         }

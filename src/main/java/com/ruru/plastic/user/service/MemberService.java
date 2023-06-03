@@ -5,6 +5,8 @@ import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.model.Member;
 import com.ruru.plastic.user.request.MemberRequest;
 
+import java.util.List;
+
 public interface MemberService {
     Member getMemberById(Long id);
 
@@ -19,4 +21,8 @@ public interface MemberService {
     Msg<Member> deleteMember(Member member);
 
     PageInfo<Member> filterMember(MemberRequest request);
+
+    List<Member> queryMemberOverdue();
+
+    List<Member> queryMember(Member member);
 }

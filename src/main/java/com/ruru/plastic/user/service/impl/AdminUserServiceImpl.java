@@ -59,23 +59,13 @@ public class AdminUserServiceImpl implements AdminUserService {
             return Msg.error(Constants.ERROR_NO_INFO);
         }
 
-        if(adminUser.getUserId()!=null){
-            AdminUser adminUserByUser = getAdminUserByUser(adminUser.getUserId());
-            if(!adminUserByUser.getId().equals(dbAdminUser.getId())){
-                return Msg.error("此用户已绑定其他管理员账号！");
-            }
-        }
-
         BeanUtils.copyProperties(adminUser,dbAdminUser, NullUtil.getNullPropertyNames(adminUser));
 
         //看用户名是否重复
         AdminUserExample adminUserExample = new AdminUserExample();
-        AdminUserExample.Criteria criteria = adminUserExample.createCriteria()
+        adminUserExample.createCriteria()
                 .andUserNameEqualTo(dbAdminUser.getUserName())
                 .andIdNotEqualTo(dbAdminUser.getId());
-        if(dbAdminUser.getUserId()!=null){
-            criteria.andUserIdEqualTo(dbAdminUser.getUserId());
-        }
         if (adminUserMapper.countByExample(adminUserExample)>0) {
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
         }
@@ -106,9 +96,6 @@ public class AdminUserServiceImpl implements AdminUserService {
         if(StringUtils.isNotEmpty(request.getMobile())){
             criteria.andMobileEqualTo(request.getMobile());
         }
-        if(request.getUserId()!=null){
-            criteria.andUserIdEqualTo(request.getUserId());
-        }
         if (request.getStartTime() != null) {
             criteria.andCreateTimeGreaterThanOrEqualTo(request.getStartTime());
         }
@@ -135,12 +122,6 @@ public class AdminUserServiceImpl implements AdminUserService {
         AdminUser user = getAdminUserByUserName(adminUser.getUserName());
         if (user != null) {
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
-        }
-        if(adminUser.getUserId()!=null){
-            AdminUser adminUserByUser = getAdminUserByUser(adminUser.getUserId());
-            if(adminUserByUser!=null){
-                return Msg.error("此管理员已绑定微信账号！");
-            }
         }
 
         if(adminUser.getStatus()==null) {
@@ -181,7 +162,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public AdminUser getAdminUserByUser(Long userId) {
         AdminUserExample example = new AdminUserExample();
-        example.createCriteria().andUserIdEqualTo(userId).andStatusEqualTo(StatusEnum.可用.getValue());
+        example.createCriteria().andStatusEqualTo(StatusEnum.可用.getValue());
         return adminUserMapper.selectOneByExample(example);
     }
 

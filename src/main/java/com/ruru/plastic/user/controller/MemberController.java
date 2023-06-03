@@ -5,15 +5,16 @@ import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.bean.MembershipOrder;
 import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.enume.MemberActionTypeEnum;
+import com.ruru.plastic.user.enume.UserMemberLevelEnum;
 import com.ruru.plastic.user.model.Member;
 import com.ruru.plastic.user.model.MemberLog;
 import com.ruru.plastic.user.model.User;
-import com.ruru.plastic.user.net.CurrentUser;
 import com.ruru.plastic.user.net.LoginRequired;
 import com.ruru.plastic.user.request.MemberRequest;
 import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.service.MemberLogService;
 import com.ruru.plastic.user.service.MemberService;
+import com.ruru.plastic.user.service.UserService;
 import com.xiaoleilu.hutool.date.DateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,8 @@ public class MemberController {
     private MemberService memberService;
     @Autowired
     private MemberLogService memberLogService;
+    @Autowired
+    private UserService userService;
 
     @LoginRequired
     @PostMapping("/info")
@@ -91,18 +94,17 @@ public class MemberController {
         return DataResponse.success(memberService.filterMember(request));
     }
 
-    @LoginRequired
     @PostMapping("/extend")
-    public DataResponse<Member> extendMember(@RequestBody MembershipOrder membershipOrder, @CurrentUser User user){
-        if(membershipOrder==null || membershipOrder.getDay()==null || membershipOrder.getUserId()==null || !membershipOrder.getUserId().equals(user.getId())){
+    public DataResponse<Member> extendMember(@RequestBody MembershipOrder membershipOrder){
+        if(membershipOrder==null || membershipOrder.getDay()==null || membershipOrder.getUserId()==null){
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
 
-        Member validMemberByUserId = memberService.getValidMemberByUserId(user.getId());
+        Member validMemberByUserId = memberService.getValidMemberByUserId(membershipOrder.getUserId());
         Msg<Member> msg;
         if(validMemberByUserId==null){
             msg = memberService.createMember(new Member() {{
-                setUserId(user.getId());
+                setUserId(membershipOrder.getUserId());
                 setBeginTime(new Date());
                 setOverTime(DateUtil.offsiteDay(new Date(), membershipOrder.getDay()));
             }});
@@ -112,6 +114,12 @@ public class MemberController {
         }
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){
             return DataResponse.error(msg.getErrorMsg());
+        }
+
+        User userById = userService.getUserById(membershipOrder.getUserId());
+        if(userById!=null){
+            userById.setMemberLevel(UserMemberLevelEnum.付费用户.getValue());
+            userService.updateUser(userById);
         }
 
         memberLogService.createMemberLog(new MemberLog(){{

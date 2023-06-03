@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class MemberServiceImpl implements MemberService {
@@ -132,5 +133,28 @@ public class MemberServiceImpl implements MemberService {
         example.setOrderByClause("create_time desc");
         PageHelper.startPage(request.getPage(),request.getSize());
         return new PageInfo<>(memberMapper.selectByExample(example));
+    }
+
+    @Override
+    public List<Member> queryMemberOverdue() {
+        MemberExample example = new MemberExample();
+        example.createCriteria().andOverTimeLessThanOrEqualTo(new Date()).andStatusEqualTo(StatusEnum.可用.getValue());
+        return memberMapper.selectByExample(example);
+    }
+
+    @Override
+    public List<Member> queryMember(Member member){
+        MemberExample example = new MemberExample();
+        MemberExample.Criteria criteria = example.createCriteria();
+        if(member.getId()!=null){
+            criteria.andIdEqualTo(member.getId());
+        }
+        if(member.getUserId()!=null){
+            criteria.andUserIdEqualTo(member.getUserId());
+        }
+        if(member.getStatus()!=null){
+            criteria.andStatusEqualTo(member.getStatus());
+        }
+        return memberMapper.selectByExample(example);
     }
 }

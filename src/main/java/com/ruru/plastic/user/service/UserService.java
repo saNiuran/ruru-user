@@ -10,6 +10,8 @@ import java.util.List;
 public interface UserService {
     User getUserById(Long userId);
 
+    User getUserByAdminUserId(Long adminId);
+
     User getUserByMobile(String mobile);
 
     User getValidUserByMobile(String mobile);
@@ -26,4 +28,5 @@ public interface UserService {
     Msg<List<User>> searchUser(UserRequest request);
 
     Msg<List<String>> queryMobilesByUserIds(List<Long> userIdList);
+
 }
