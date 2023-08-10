@@ -10,13 +10,6 @@ public enum  ResponseEnum implements CommonEnum{
     METHOD_NOT_ALLOW(40500,"请求失败","请求方法不支持"),
     ERROR(500,"请求失败","服务器异常"),
     ERROR_CODE_NOT_EXIST(500, "验证码无效","验证码无效，请重新获取"),
-    ERROR_USER_NO_REPUTATION(500, "用户信誉度过低","当前用户信誉度小于等于0"),
-    ERROR_USER_ACCOUNT_NOT_EXIST(500, "账户不存在","当前用户账户信息不存在"),
-    ERROR_USER_ACCOUNT_FORBIDDEN(500, "账户被禁用","当前用户账户被禁用"),
-    ERROR_USER_NO_COM_AUTH(500, "用户未进行企业认证","当前用户未进行企业认证"),
-    ERROR_USER_NO_PER_AUTH(500, "用户未进行个人","当前用户未进行个人认证"),
-    ERROR_STATUS_NOT_EXIST(40600, "状态值不存在","当前状态值不存在"),
-    ERROR_USER_STATUS_CLOSE(40700, "用户已被禁用","当前用户已被禁用"),
     ;
 
     private int code; //状态

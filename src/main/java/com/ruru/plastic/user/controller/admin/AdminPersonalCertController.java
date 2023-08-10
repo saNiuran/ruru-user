@@ -82,6 +82,14 @@ public class AdminPersonalCertController {
         if (StringUtils.isNotEmpty(msg.getErrorMsg())) {
             return DataResponse.error(msg.getErrorMsg());
         }
+        Msg<User> userMsg = userService.updateUser(new User() {{
+            setId(personalCertById.getUserId());
+            setCertLevel(UserCertLevelEnum.个人认证.getValue());
+        }});
+        if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
+            return DataResponse.error(userMsg.getErrorMsg());
+        }
+        userById = userMsg.getData();
 
         certificateLogService.createCertificateLog(new CertificateLog() {{
             setOperatorType(OperatorTypeEnum.工作人员.getValue());
@@ -92,13 +100,8 @@ public class AdminPersonalCertController {
             setCertStatus(msg.getData().getStatus());
         }});
 
-        userService.updateUser(new User() {{
-            setId(personalCertById.getUserId());
-            setCertLevel(UserCertLevelEnum.个人认证.getValue());
-        }});
 
         certTask.createCertMessage(personalCertById, NotifyCodeEnum.个人认证_审核通过, adminUser);
-
         certTask.createPush(new PushBody() {{
             setNotifyCode(NotifyCodeEnum.个人认证_审核通过);
             setUserIds(Collections.singletonList(personalCertById.getUserId()));
@@ -112,7 +115,7 @@ public class AdminPersonalCertController {
         //赠送7天VIP会员
         //检查是不是已经赠送过
         List<MemberLog> memberLogList = memberLogService.queryMemberLog(new MemberLogRequest() {{
-            setUserId(userById.getId());
+            setUserId(personalCertById.getUserId());
             setActionType(MemberActionTypeEnum.个人认证赠送.getValue());
         }});
 
@@ -122,7 +125,7 @@ public class AdminPersonalCertController {
             Msg<Member> memberMsg;
             if(validMemberByUserId==null){
                 memberMsg = memberService.createMember(new Member() {{
-                    setUserId(userById.getId());
+                    setUserId(personalCertById.getUserId());
                     setStatus(StatusEnum.可用.getValue());
                     setBeginTime(new Date());
                     setOverTime(DateUtil.offsiteDay(new Date(), 7));
@@ -135,12 +138,10 @@ public class AdminPersonalCertController {
                 return DataResponse.error(memberMsg.getErrorMsg());
             }
 
-            if(StringUtils.isEmpty(memberMsg.getErrorMsg())){
-                userById.setMemberLevel(UserMemberLevelEnum.付费用户.getValue());
-                userService.updateUser(userById);
-            }
+            userById.setMemberLevel(UserMemberLevelEnum.付费用户.getValue());
+            userService.updateUser(userById);
             memberLogService.createMemberLog(new MemberLog(){{
-                setUserId(userById.getId());
+                setUserId(personalCertById.getUserId());
                 setActionType(MemberActionTypeEnum.个人认证赠送.getValue());
                 setDays(7);
                 setRemark("个人认证赠送");
@@ -166,7 +167,11 @@ public class AdminPersonalCertController {
         }
 
         User userById = userService.getUserById(personalCertById.getUserId());
-        if(userById!=null && userById.getCertLevel().equals(UserCertLevelEnum.企业认证.getValue())){
+        if(userById==null){
+            return DataResponse.error("用户信息错误！");
+        }
+
+        if(userById.getCertLevel().equals(UserCertLevelEnum.企业认证.getValue())){
             return DataResponse.error("用户已经企业认证，不能再审核个人认证");
         }
 
@@ -191,10 +196,8 @@ public class AdminPersonalCertController {
 
         //如果原来认证成功，回退到未认证;
         if(fromOk){
-            if(userById!=null && userById.getCertLevel().equals(UserCertLevelEnum.个人认证.getValue())){
-                userById.setCertLevel(UserCertLevelEnum.未认证.getValue());
-                userService.updateUser(userById);
-            }
+            userById.setCertLevel(UserCertLevelEnum.未认证.getValue());
+            userService.updateUser(userById);
         }
 
         certTask.createPush(new PushBody() {{

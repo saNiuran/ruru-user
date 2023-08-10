@@ -17,6 +17,7 @@ import com.ruru.plastic.user.service.CertificateLogService;
 import com.ruru.plastic.user.service.CorporateCertService;
 import com.ruru.plastic.user.service.UserCorporateCertMatchService;
 import com.ruru.plastic.user.task.CertTask;
+import com.xiaoleilu.hutool.util.RandomUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -76,8 +77,12 @@ public class CorporateCertController {
             return DataResponse.error("请在完成个人认证后，再进行企业认证！");
         }
 
-        if(corporateCert==null || StringUtils.isEmpty(corporateCert.getSocialCode())){
+        if(corporateCert==null){
             return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+
+        if(StringUtils.isEmpty(corporateCert.getSocialCode())){
+            corporateCert.setSocialCode("RR"+ RandomUtil.randomNumbers(8));
         }
 
         boolean needAudit = true;
@@ -157,6 +162,8 @@ public class CorporateCertController {
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){
             return DataResponse.error(msg.getErrorMsg());
         }
+
+        userCorporateCertMatchService.updateUserCorporateCertMatch(userCorporateCertMatchByUserId); //修改更新时间，这样在前端会排序到最前面
 
         certificateLogService.createCertificateLog(new CertificateLog(){{
             setOperatorType(OperatorTypeEnum.用户.getValue());

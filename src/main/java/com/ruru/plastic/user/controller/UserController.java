@@ -1,14 +1,8 @@
 package com.ruru.plastic.user.controller;
 
 import com.github.pagehelper.PageInfo;
-import com.ruru.plastic.user.enume.EnquiryEventTypeEnum;
-import com.ruru.plastic.user.enume.StatusEnum;
-import com.ruru.plastic.user.enume.UserStatusEnum;
-import com.ruru.plastic.user.enume.UserTypeEnum;
-import com.ruru.plastic.user.feign.BidFeignService;
-import com.ruru.plastic.user.feign.ConfigFeignService;
-import com.ruru.plastic.user.feign.FinanceFeignService;
-import com.ruru.plastic.user.feign.SmsFeignService;
+import com.ruru.plastic.user.enume.*;
+import com.ruru.plastic.user.feign.*;
 import com.ruru.plastic.user.model.*;
 import com.ruru.plastic.user.net.CurrentUser;
 import com.ruru.plastic.user.net.LoginRequired;
@@ -21,6 +15,7 @@ import com.ruru.plastic.user.task.PushTask;
 import com.ruru.plastic.user.task.TokenTask;
 import com.ruru.plastic.user.bean.*;
 import com.ruru.plastic.user.service.*;
+import com.ruru.plastic.user.utils.MyStringUtils;
 import com.xiaoleilu.hutool.date.DateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -72,10 +67,17 @@ public class UserController {
     private ConfigFeignService configFeignService;
     @Autowired
     private FinanceFeignService financeFeignService;
+    @Autowired
+    private ChannelFeignService channelFeignService;
 
     @LoginRequired
     @PostMapping("/info")
     public DataResponse<UserResponse> getUserById(@RequestBody User user) {
+        return getAnonUserById(user);
+    }
+
+    @PostMapping("/info/anon")
+    public DataResponse<UserResponse> getAnonUserById(@RequestBody User user) {
         if (user == null || user.getId() == null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
@@ -86,6 +88,31 @@ public class UserController {
         UserResponse response = getUserResponseById(user.getId());
         return DataResponse.success(response);
     }
+
+    @PostMapping("/info/anon/mobile")
+    public DataResponse<Integer> isUserByMobile(@RequestBody User user) {
+        if (user == null || StringUtils.isEmpty(user.getMobile())) {
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+        User userById = userService.getValidUserByMobile(user.getMobile());
+        if (userById == null) {
+            return DataResponse.success(0);
+        }
+        return DataResponse.success(1);
+    }
+
+    @PostMapping("/info/simple/anon")
+    public DataResponse<User> getAnonSimpleUserById(@RequestBody User user) {
+        if (user == null || user.getId() == null) {
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+        User userById = userService.getUserById(user.getId());
+        if (userById == null) {
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+        return DataResponse.success(userById);
+    }
+
 
     @PostMapping("/info/uid")
     public DataResponse<UserResponse> getUserByUid(@RequestBody ThirdParty thirdParty) {
@@ -127,28 +154,36 @@ public class UserController {
 
     private UserResponse getUserResponseById(Long userId) {
         User userById = userService.getUserById(userId);
-//        userById.setMobile(MyStringUtils.getHidePhone(userById.getMobile()));
+        if(userById==null){
+            return null;
+        }
 
         UserResponse response = new UserResponse();
         BeanUtils.copyProperties(userById, response);
+
+        ThirdParty thirdPartyInfo = redisService.getThirdPartyInfo(userId);
+        if(null!=thirdPartyInfo){
+            response.setUid(thirdPartyInfo.getUid());
+            response.setThirdType(thirdPartyInfo.getType());
+        }
+
         response.setMember(memberService.getValidMemberByUserId(userId));
         response.setUserAccount(userAccountService.getUserAccountByUserId(userId));
         if (userById.getCompanyId() != null) {
             response.setCompany(companyService.getCompanyById(userById.getCompanyId()));
         }
-        PersonalCert personalCertByUserId = personalCertService.getPersonalCertByUserId(userId);
-        if(personalCertByUserId!=null){
-            response.setPersonalCertStatus(personalCertByUserId.getStatus());
-        }
-        UserCorporateCertMatch userCorporateCertMatchByUserId = userCorporateCertMatchService.getUserCorporateCertMatchByUserId(userId);
-        if(userCorporateCertMatchByUserId!=null){
-            CorporateCert corporateCertById = corporateCertService.getCorporateCertById(userCorporateCertMatchByUserId.getCorporateCertId());
-            if(corporateCertById!=null){
-                response.setCorporateCertStatus(corporateCertById.getStatus());
-            }
-        }
         return response;
     }
+
+    private UserResponse getUserResponseByIdHiddenMobile(Long userId){
+        UserResponse userResponseById = getUserResponseById(userId);
+        if(userResponseById==null){
+            return null;
+        }
+        userResponseById.setMobile(MyStringUtils.getHidePhone(userResponseById.getMobile()));
+        return userResponseById;
+    }
+
 
     @Description("这个信息最全")
     @LoginRequired
@@ -162,7 +197,10 @@ public class UserController {
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
 
-        UserResponse response = getUserResponseById(user.getId());
+        UserResponse response = getUserResponseByIdHiddenMobile(user.getId());
+        if(response==null){
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
 
         UserPack pack = new UserPack();
         BeanUtils.copyProperties(response, pack);
@@ -247,16 +285,20 @@ public class UserController {
             userAccountService.createUserAccount(new UserAccount() {{
                 setUserId(msg.getData().getId());
             }});
+
+            //通知channel模块
+            channelFeignService.registerUserSuccess(userByMobile);
         }else if(userByMobile.getStatus().equals(UserStatusEnum.注销.getValue())){
-            if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-15).getTime()) {
+//            if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-15).getTime()) {
                 //刚注销15天，给反悔期15天
-                userByMobile.setStatus(UserStatusEnum.有效.getValue());
-                userService.updateUser(userByMobile);
-//            }else if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-365).getTime()){
-//                //小于1年，不让再注册
-//                return DataResponse.error("您的账户已主动注销，在1年内无法再注册和登录");
+//                userByMobile.setStatus(UserStatusEnum.有效.getValue());
+//                userService.updateUser(userByMobile);
+//            }else
+            if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-365).getTime()){
+                //小于1年，不让再注册
+                return DataResponse.error("您的账户已主动注销，请在"+(365-Math.round(new Date().getTime()-userByMobile.getUpdateTime().getTime())/(24*3600*1000.0))+"天后再注册和登录");
             }else{
-                //超出15天反悔期
+
                 userByMobile.setMobile(userByMobile.getMobile()+".");  //把原来的电话+小数点
                 userService.updateUser(userByMobile);
 
@@ -297,6 +339,7 @@ public class UserController {
         redisService.expireUserInfo(user.getId(), UserTypeEnum.User.getValue());
         if (user.getAdminId() != 0) {
             redisService.expireUserInfo(user.getAdminId(), UserTypeEnum.Admin.getValue());
+            redisService.expireThirdPartyInfo(user.getId());
         }
         return DataResponse.success(null);
     }
@@ -315,6 +358,7 @@ public class UserController {
         redisService.extendUserInfo(user.getId(), UserTypeEnum.User.getValue());
         if (user.getAdminId() != 0) {
             redisService.expireUserInfo(user.getAdminId(), UserTypeEnum.Admin.getValue());
+            redisService.expireThirdPartyInfo(user.getId());
         }
         //下架此用户的所有信息，包括 询价 和 报价
         pushTask.sendUserLogoff(user);
@@ -430,6 +474,7 @@ public class UserController {
         UserResponse userResponseById = getUserResponseById(me.getId());
         Privilege mPrivilege = new Privilege();
         mPrivilege.setAction(enquiryEventLog.getEventType());
+        assert userResponseById != null;
         mPrivilege.setMemberLevel(userResponseById.getMemberLevel());
         Long deposit = userResponseById.getUserAccount().getDeposit();
         if(deposit==null || deposit==0){
@@ -457,8 +502,40 @@ public class UserController {
             mPrivilege = dataResponse.getData().get(0);
 
             if(mPrivilege.getValue()==null){
-                return DataResponse.success(0);
-            }else if(mPrivilege.getValue()==0){
+                //这里要检查用户是否处于试用期，试用期间，允许报价
+                //只可能有1条
+//                Date overtime = new Date();
+//                List<MemberLog> list1 = memberLogService.queryMemberLog(new MemberLogRequest() {{
+//                    setActionType(MemberActionTypeEnum.个人认证赠送.getValue());
+//                    setUserId(me.getId());
+//                }});
+//                if(list1.size()>0){
+//                    overtime = DateUtil.offsiteDay(list1.get(0).getCreateTime(),list1.get(0).getDays());
+//                }
+//
+//                List<MemberLog> list2= memberLogService.queryMemberLog(new MemberLogRequest() {{
+//                    setActionType(MemberActionTypeEnum.企业认证赠送.getValue());
+//                    setUserId(me.getId());
+//                }});
+//                if(list2.size()>0){
+//                        Date overtime2 = DateUtil.offsiteDay(list2.get(0).getCreateTime(),list2.get(0).getDays());
+//                        overtime = overtime.before(overtime2)?overtime2:overtime;
+//                }
+//
+//                if(overtime.before(new Date())){        //不在试用期
+//                    return DataResponse.success(0);
+//                }else{
+//                    return DataResponse.success(1);
+//                }
+
+                Member memberByUserId = memberService.getMemberByUserId(me.getId());
+                if(memberByUserId==null || memberByUserId.getOverTime().before(new Date())){
+                    return DataResponse.success(0);
+                }else{
+                    return DataResponse.success(1);
+                }
+
+            }else if(mPrivilege.getValue()==0){     //表示不限制
                 return DataResponse.success(1);
             }else{
                 //检查数字有没有超出

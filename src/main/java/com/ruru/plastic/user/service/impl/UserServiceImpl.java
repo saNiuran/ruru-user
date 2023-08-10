@@ -87,6 +87,9 @@ public class UserServiceImpl implements UserService {
         if(user.getCertLevel()==null){
             user.setCertLevel(UserCertLevelEnum.未认证.getValue());
         }
+        if(user.getPushStatus()==null){
+            user.setPushStatus(StatusEnum.可用.getValue());
+        }
         if (user.getCreateTime() == null) {
             user.setCreateTime(new Date());
         }
@@ -112,10 +115,12 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(user, dbUser, NullUtil.getNullPropertyNames(user));
 
         //防止修改后有重复的电话号码
-        UserExample example = new UserExample();
-        example.createCriteria().andMobileEqualTo(dbUser.getMobile()).andIdNotEqualTo(dbUser.getId());
-        if (userMapper.countByExample(example) > 0) {
-            return Msg.error(Constants.ERROR_DUPLICATE_INFO);
+        if(StringUtils.isNotEmpty(user.getMobile())) {
+            UserExample example = new UserExample();
+            example.createCriteria().andMobileEqualTo(dbUser.getMobile()).andIdNotEqualTo(user.getId());
+            if (userMapper.countByExample(example) > 0) {
+                return Msg.error(Constants.ERROR_DUPLICATE_INFO);
+            }
         }
         dbUser.setUpdateTime(new Date());
         userMapper.updateByPrimaryKeySelective(dbUser);
@@ -186,6 +191,9 @@ public class UserServiceImpl implements UserService {
         }
         if(request.getMemberLevel()!=null){
             criteria.andMemberLevelEqualTo(request.getMemberLevel());
+        }
+        if(request.getPushStatus()!=null){
+            criteria.andPushStatusEqualTo(request.getPushStatus());
         }
         if (request.getStatus() != null) {
             criteria.andStatusEqualTo(request.getStatus());

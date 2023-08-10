@@ -8,7 +8,10 @@ import com.ruru.plastic.user.dao.MemberLogMapper;
 import com.ruru.plastic.user.model.MemberLog;
 import com.ruru.plastic.user.model.MemberLogExample;
 import com.ruru.plastic.user.request.MemberLogRequest;
+import com.ruru.plastic.user.response.MemberLogResponse;
 import com.ruru.plastic.user.service.MemberLogService;
+import com.ruru.plastic.user.service.UserService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,9 +23,24 @@ public class MemberLogServiceImpl implements MemberLogService {
 
     @Autowired
     private MemberLogMapper memberLogMapper;
+    @Autowired
+    private UserService userService;
+
     @Override
     public MemberLog getMemberLogById(Long id) {
         return memberLogMapper.selectByPrimaryKey(id);
+    }
+
+    @Override
+    public MemberLogResponse getMemberLogResponseById(Long id){
+        MemberLog memberLogById = getMemberLogById(id);
+        if(memberLogById==null){
+            return null;
+        }
+        MemberLogResponse response = new MemberLogResponse();
+        BeanUtils.copyProperties(memberLogById,response);
+        response.setUser(userService.getUserById(response.getUserId()));
+        return response;
     }
 
     @Override

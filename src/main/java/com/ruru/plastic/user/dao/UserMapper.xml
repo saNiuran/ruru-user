@@ -18,6 +18,7 @@
     <result column="city" property="city" jdbcType="VARCHAR" />
     <result column="member_level" property="memberLevel" jdbcType="INTEGER" />
     <result column="cert_level" property="certLevel" jdbcType="INTEGER" />
+    <result column="push_status" property="pushStatus" jdbcType="INTEGER" />
     <result column="status" property="status" jdbcType="INTEGER" />
     <result column="admin_id" property="adminId" jdbcType="BIGINT" />
   </resultMap>
@@ -81,7 +82,8 @@
   </sql>
   <sql id="Base_Column_List" >
     id, company_id, premier, title, mobile, avatar, nick_name, slogan, gender, career, 
-    birthday, create_time, update_time, city, member_level, cert_level, `status`, admin_id
+    birthday, create_time, update_time, city, member_level, cert_level, push_status, 
+    `status`, admin_id
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserExample" >
     select
@@ -122,13 +124,15 @@
       slogan, gender, career, 
       birthday, create_time, update_time, 
       city, member_level, cert_level, 
-      `status`, admin_id)
+      push_status, `status`, admin_id
+      )
     values (#{companyId,jdbcType=BIGINT}, #{premier,jdbcType=INTEGER}, #{title,jdbcType=VARCHAR}, 
       #{mobile,jdbcType=VARCHAR}, #{avatar,jdbcType=VARCHAR}, #{nickName,jdbcType=VARCHAR}, 
       #{slogan,jdbcType=VARCHAR}, #{gender,jdbcType=INTEGER}, #{career,jdbcType=VARCHAR}, 
       #{birthday,jdbcType=TIMESTAMP}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, 
       #{city,jdbcType=VARCHAR}, #{memberLevel,jdbcType=INTEGER}, #{certLevel,jdbcType=INTEGER}, 
-      #{status,jdbcType=INTEGER}, #{adminId,jdbcType=BIGINT})
+      #{pushStatus,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, #{adminId,jdbcType=BIGINT}
+      )
   </insert>
   <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.User" >
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
@@ -180,6 +184,9 @@
       </if>
       <if test="certLevel != null" >
         cert_level,
+      </if>
+      <if test="pushStatus != null" >
+        push_status,
       </if>
       <if test="status != null" >
         `status`,
@@ -233,6 +240,9 @@
       </if>
       <if test="certLevel != null" >
         #{certLevel,jdbcType=INTEGER},
+      </if>
+      <if test="pushStatus != null" >
+        #{pushStatus,jdbcType=INTEGER},
       </if>
       <if test="status != null" >
         #{status,jdbcType=INTEGER},
@@ -299,6 +309,9 @@
       <if test="record.certLevel != null" >
         cert_level = #{record.certLevel,jdbcType=INTEGER},
       </if>
+      <if test="record.pushStatus != null" >
+        push_status = #{record.pushStatus,jdbcType=INTEGER},
+      </if>
       <if test="record.status != null" >
         `status` = #{record.status,jdbcType=INTEGER},
       </if>
@@ -328,6 +341,7 @@
       city = #{record.city,jdbcType=VARCHAR},
       member_level = #{record.memberLevel,jdbcType=INTEGER},
       cert_level = #{record.certLevel,jdbcType=INTEGER},
+      push_status = #{record.pushStatus,jdbcType=INTEGER},
       `status` = #{record.status,jdbcType=INTEGER},
       admin_id = #{record.adminId,jdbcType=BIGINT}
     <if test="_parameter != null" >
@@ -382,6 +396,9 @@
       <if test="certLevel != null" >
         cert_level = #{certLevel,jdbcType=INTEGER},
       </if>
+      <if test="pushStatus != null" >
+        push_status = #{pushStatus,jdbcType=INTEGER},
+      </if>
       <if test="status != null" >
         `status` = #{status,jdbcType=INTEGER},
       </if>
@@ -408,6 +425,7 @@
       city = #{city,jdbcType=VARCHAR},
       member_level = #{memberLevel,jdbcType=INTEGER},
       cert_level = #{certLevel,jdbcType=INTEGER},
+      push_status = #{pushStatus,jdbcType=INTEGER},
       `status` = #{status,jdbcType=INTEGER},
       admin_id = #{adminId,jdbcType=BIGINT}
     where id = #{id,jdbcType=BIGINT}

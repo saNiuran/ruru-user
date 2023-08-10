@@ -5,7 +5,6 @@ import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
-import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -35,9 +34,7 @@ public class RocketMQServer {
         try {
             //订阅topic tag
             consumer.subscribe("RURU_USER",
-                    "userCityParse" +  //用户地址解析
-                            "||userAccount" + //动账操作
-                            "||saveUserWx"  //保存获取的用户微信信息
+                            "||userAccount" //动账操作
             );
             //设置Consumer第一次启动是从队列头部开始消费还是队列尾部开始消费
             //如果非第一次启动，那么按照上次消费的位置继续消费
@@ -45,11 +42,11 @@ public class RocketMQServer {
             consumer.registerMessageListener((MessageListenerConcurrently) (list, context) -> {
                 try {
                     for (MessageExt messageExt : list) {
-                        if("saveUserWx".equals(messageExt.getTags())){
-                            String messageBody = new String(messageExt.getBody(), RemotingHelper.DEFAULT_CHARSET);
+//                        if("userAccount".equals(messageExt.getTags())){
+//                            String messageBody = new String(messageExt.getBody(), RemotingHelper.DEFAULT_CHARSET);
 //                            WxUser wxUser = JSON.parseObject(messageBody, WxUser.class);
 //                            wxUserService.createWxUser(wxUser);
-                        }
+//                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

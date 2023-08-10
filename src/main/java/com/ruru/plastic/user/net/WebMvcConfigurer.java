@@ -21,6 +21,7 @@ public class WebMvcConfigurer extends WebMvcConfigurationSupport {
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
         argumentResolvers.add(currentUserMethodArgumentResolver());
+        argumentResolvers.add(currentAdminUserMethodArgumentResolver());
         super.addArgumentResolvers(argumentResolvers);
     }
 
@@ -38,6 +39,11 @@ public class WebMvcConfigurer extends WebMvcConfigurationSupport {
     @Bean
     public CurrentUserMethodArgumentResolver currentUserMethodArgumentResolver() {
         return new CurrentUserMethodArgumentResolver();
+    }
+
+    @Bean
+    public CurrentAdminUserMethodArgumentResolver currentAdminUserMethodArgumentResolver() {
+        return new CurrentAdminUserMethodArgumentResolver();
     }
 
     @Bean

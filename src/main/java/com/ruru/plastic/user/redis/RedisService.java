@@ -1,5 +1,7 @@
 package com.ruru.plastic.user.redis;
 
+import com.ruru.plastic.user.model.ThirdParty;
+
 public interface RedisService {
 
     ////////////////////// user token
@@ -11,4 +13,9 @@ public interface RedisService {
 
     String getSmsCode(String key);
 
+    void setThirdPartyInfo(Long userId, ThirdParty thirdParty);
+
+    ThirdParty getThirdPartyInfo(Long userId);
+
+    void expireThirdPartyInfo(Long userId);
 }

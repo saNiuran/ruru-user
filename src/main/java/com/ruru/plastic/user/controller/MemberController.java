@@ -6,12 +6,15 @@ import com.ruru.plastic.user.bean.MembershipOrder;
 import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.enume.MemberActionTypeEnum;
 import com.ruru.plastic.user.enume.UserMemberLevelEnum;
+import com.ruru.plastic.user.feign.ChannelFeignService;
 import com.ruru.plastic.user.model.Member;
 import com.ruru.plastic.user.model.MemberLog;
 import com.ruru.plastic.user.model.User;
 import com.ruru.plastic.user.net.LoginRequired;
+import com.ruru.plastic.user.request.MemberLogRequest;
 import com.ruru.plastic.user.request.MemberRequest;
 import com.ruru.plastic.user.response.DataResponse;
+import com.ruru.plastic.user.response.MemberLogResponse;
 import com.ruru.plastic.user.service.MemberLogService;
 import com.ruru.plastic.user.service.MemberService;
 import com.ruru.plastic.user.service.UserService;
@@ -23,7 +26,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 
 @RestController
@@ -96,7 +101,7 @@ public class MemberController {
 
     @PostMapping("/extend")
     public DataResponse<Member> extendMember(@RequestBody MembershipOrder membershipOrder){
-        if(membershipOrder==null || membershipOrder.getDay()==null || membershipOrder.getUserId()==null){
+        if(membershipOrder==null || membershipOrder.getId()==null || membershipOrder.getDay()==null || membershipOrder.getUserId()==null){
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
 
@@ -122,13 +127,41 @@ public class MemberController {
             userService.updateUser(userById);
         }
 
+        List<MemberLog> memberLogList = memberLogService.queryMemberLog(new MemberLogRequest() {{
+            setUserId(msg.getData().getUserId());
+            setActionType(MemberActionTypeEnum.创建.getValue());
+        }});
+
         memberLogService.createMemberLog(new MemberLog(){{
             setUserId(msg.getData().getUserId());
-            setActionType(MemberActionTypeEnum.展期.getValue());
+            setActionType(memberLogList.size()>0?MemberActionTypeEnum.展期.getValue():MemberActionTypeEnum.创建.getValue());
             setDays(membershipOrder.getDay());
-            setRemark("会员续费");
+            setRemark(memberLogList.size()>0?"会员续费":"会员年费");
         }});
 
         return DataResponse.success(msg.getData());
+    }
+
+    @PostMapping("/log/query")
+    public DataResponse<List<MemberLog>> queryMemberLog(@RequestBody MemberLogRequest request){
+        return DataResponse.success(memberLogService.queryMemberLog(request));
+    }
+
+    @PostMapping("/log/last/two")
+    public DataResponse<List<MemberLogResponse>> getLastTwoMemberLog(){
+        List<MemberLog> logList = memberLogService.queryMemberLog(new MemberLogRequest() {{
+            setStartTime(DateUtil.offsiteDay(new Date(), -3));  //过去三天
+            setActionType(MemberActionTypeEnum.展期.getValue());
+        }});
+
+        List<MemberLog> subList = logList.size()>2?logList.subList(0, 2):logList;
+
+        List<MemberLogResponse> responseList = new ArrayList<>();
+
+        for(MemberLog log: subList){
+            responseList.add(memberLogService.getMemberLogResponseById(log.getId()));
+        }
+
+        return DataResponse.success(responseList);
     }
 }

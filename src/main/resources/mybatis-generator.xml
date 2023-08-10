@@ -47,7 +47,7 @@
         </javaClientGenerator>
 
         <!--对应数据库表名 -->
-        <table tableName="user_corporate_cert_match">
+        <table tableName="user_wx">
             <property name="useActualColumnNames" value="false"/>
             <generatedKey column="id" sqlStatement="MySql" identity="true"/>
         </table>

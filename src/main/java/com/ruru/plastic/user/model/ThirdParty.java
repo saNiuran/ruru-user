@@ -1,8 +1,9 @@
 package com.ruru.plastic.user.model;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class ThirdParty {
+public class ThirdParty implements Serializable {
     private Long id;
 
     private Integer type;

@@ -70,6 +70,9 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
         if(userCorporateCertMatch.getCreateTime()==null){
             userCorporateCertMatch.setCreateTime(new Date());
         }
+        if(userCorporateCertMatch.getUpdateTime()==null){
+            userCorporateCertMatch.setUpdateTime(new Date());
+        }
         userCorporateCertMatchMapper.insertSelective(userCorporateCertMatch);
         return Msg.success(getUserCorporateCertMatchById(userCorporateCertMatch.getId()));
     }
@@ -91,6 +94,7 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
         }
 
+        userCorporateCertMatchById.setUpdateTime(new Date());
         userCorporateCertMatchMapper.updateByPrimaryKeySelective(userCorporateCertMatchById);
         return Msg.success(getUserCorporateCertMatchById(userCorporateCertMatch.getId()));
     }
@@ -134,7 +138,7 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
         if(StringUtils.isNotEmpty(request.getOrderClause())){
             example.setOrderByClause(request.getOrderClause());
         }else{
-            example.setOrderByClause("create_time desc");
+            example.setOrderByClause("update_time desc");
         }
 
         PageHelper.startPage(request.getPage(),request.getSize());

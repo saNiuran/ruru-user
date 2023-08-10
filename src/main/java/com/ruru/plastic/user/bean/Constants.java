@@ -11,6 +11,7 @@ public class Constants {
 
     public static final String REDIS_KEY_USER_TOKEN = "user:token:";
     public static final String REDIS_KEY_ADMIN_USER_TOKEN = "user:adminToken:";
+    public static final String REDIS_KEY_USER_THIRD_PARTY_LOGON = "user:thirdParty:logon:";
 
     public final static String ACCESS_TOKEN = "token";
     public final static String ACCESS_TOKEN_ADMIN = "adminToken";

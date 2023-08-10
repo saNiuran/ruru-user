@@ -1,6 +1,6 @@
 package com.ruru.plastic.user.request;
 
-import com.ruru.plastic.user.model.Member;
+import com.ruru.plastic.user.model.UserWx;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -11,15 +11,10 @@ import java.util.Date;
 @Data
 @ToString
 @EqualsAndHashCode(callSuper = true)
-public class MemberRequest extends Member implements Serializable {
+public class UserWxRequest extends UserWx implements Serializable {
     private Integer page = 1;
     private Integer size = 10;
     private Date startTime;
     private Date endTime;
-    private Integer timeType = 0;
-
-    private Integer day;
-
-    private Integer durationType;  //0=首年 1=非首年
-    private Long membershipOrderId;
+    private String code;
 }

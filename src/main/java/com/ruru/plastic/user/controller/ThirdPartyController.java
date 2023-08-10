@@ -9,6 +9,9 @@ import com.ruru.plastic.user.model.AdminUser;
 import com.ruru.plastic.user.model.ThirdParty;
 import com.ruru.plastic.user.model.User;
 import com.ruru.plastic.user.model.UserAccount;
+import com.ruru.plastic.user.net.CurrentUser;
+import com.ruru.plastic.user.net.LoginRequired;
+import com.ruru.plastic.user.redis.RedisService;
 import com.ruru.plastic.user.request.ThirdPartyRequest;
 import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.response.UserResponse;
@@ -47,6 +50,8 @@ public class ThirdPartyController {
     private StringRedisTemplate redisTemplate;
     @Autowired
     private AdminUserService adminUserService;
+    @Autowired
+    private RedisService redisService;
 
     @Description("注册的时候，先检测是不是已经绑定过；如果绑定过，前端直接调用登录接口；如果没有绑定过，前端调用绑定接口")
     @PostMapping("/register")
@@ -86,6 +91,9 @@ public class ThirdPartyController {
         UserResponse response = new UserResponse();
         User user = userService.getUserById(existedInfo.getUserId());
         BeanUtils.copyProperties(user, response);
+
+        redisService.setThirdPartyInfo(existedInfo.getUserId(),thirdParty);
+
         response.setToken(tokenTask.createToken(user.getId(), appType, deviceCode, UserTypeEnum.User.getValue()));
         if(user.getAdminId()!=null && user.getAdminId()>0){
             AdminUser adminUserById = adminUserService.getAdminUserById(user.getAdminId());
@@ -130,8 +138,15 @@ public class ThirdPartyController {
             thirdPartyByTypeAndUid.setUserId(userByMobile.getId());
             thirdPartyService.updateThirdParty(thirdPartyByTypeAndUid);
 
-            userByMobile.setNickName(thirdPartyByTypeAndUid.getName());
-            userByMobile.setAvatar(thirdPartyByTypeAndUid.getIconurl());
+            if(StringUtils.isNotEmpty(thirdPartyByTypeAndUid.getName())) {
+                userByMobile.setNickName(thirdPartyByTypeAndUid.getName());
+            }
+            if(StringUtils.isNotEmpty(thirdPartyByTypeAndUid.getIconurl())) {
+                userByMobile.setAvatar(thirdPartyByTypeAndUid.getIconurl());
+            }
+            if(StringUtils.isNotEmpty(thirdPartyByTypeAndUid.getGender())){
+                userByMobile.setGender(Integer.parseInt(thirdPartyByTypeAndUid.getGender()));
+            }
             userService.updateUser(userByMobile);
 
             return thirdPartyLogin(thirdPartyService.getThirdPartyById(thirdPartyByTypeAndUid.getId()), servletRequest);
@@ -140,8 +155,15 @@ public class ThirdPartyController {
         //新用户，创建
         User xUser = new User();
         xUser.setMobile(request.getMobile());
-        xUser.setNickName(thirdPartyByTypeAndUid.getName());
-        xUser.setAvatar(thirdPartyByTypeAndUid.getIconurl());
+        if(StringUtils.isNotEmpty(thirdPartyByTypeAndUid.getName())) {
+            xUser.setNickName(thirdPartyByTypeAndUid.getName());
+        }
+        if(StringUtils.isNotEmpty(thirdPartyByTypeAndUid.getIconurl())) {
+            xUser.setAvatar(thirdPartyByTypeAndUid.getIconurl());
+        }
+        if(StringUtils.isNotEmpty(thirdPartyByTypeAndUid.getGender())){
+            xUser.setGender(Integer.parseInt(thirdPartyByTypeAndUid.getGender()));
+        }
         Msg<User> userMsg = userService.createUser(xUser);
         if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
             return DataResponse.error(userMsg.getErrorMsg());
@@ -161,12 +183,17 @@ public class ThirdPartyController {
         return thirdPartyLogin(thirdPartyMsg.getData(), servletRequest);
     }
 
+    @LoginRequired
     @PostMapping("/unbind")
-    public DataResponse<ThirdParty> unbindThirdParty(@RequestBody ThirdParty thirdParty) {
-        if (thirdParty == null || thirdParty.getId() == null) {
+    public DataResponse<ThirdParty> unbindThirdParty(@RequestBody ThirdParty thirdParty, @CurrentUser User user) {
+        if (thirdParty == null || StringUtils.isEmpty(thirdParty.getUid()) || thirdParty.getType()==null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
-        ThirdParty thirdPartyById = thirdPartyService.getThirdPartyById(thirdParty.getId());
+        ThirdParty thirdPartyById = thirdPartyService.getThirdPartyByTypeAndUid(new ThirdParty(){{
+            setUid(thirdParty.getUid());
+            setType(thirdParty.getType());
+            setUserId(user.getId());
+        }});
         if (thirdPartyById == null) {
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
@@ -174,6 +201,9 @@ public class ThirdPartyController {
         if (StringUtils.isNotEmpty(thirdPartyMsg.getErrorMsg())) {
             return DataResponse.error(thirdPartyMsg.getErrorMsg());
         }
+
+        redisService.expireThirdPartyInfo(thirdPartyById.getUserId());
+
         return DataResponse.success(thirdPartyMsg.getData());
     }
 }

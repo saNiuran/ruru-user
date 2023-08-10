@@ -101,10 +101,15 @@ public class AdminCorporateCertController {
             setCertStatus(msg.getData().getStatus());
         }});
 
-        userService.updateUser(new User(){{
+        Msg<User> userMsg = userService.updateUser(new User(){{
             setId(userCorporateCertMatchById.getUserId());
             setCertLevel(UserCertLevelEnum.企业认证.getValue());
         }});
+        if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
+            return DataResponse.error(userMsg.getErrorMsg());
+        }
+        userById = userMsg.getData();
+
 
         certTask.createCertMessage(userCorporateCertMatchById, NotifyCodeEnum.企业认证_审核通过,adminUser);
 
@@ -121,7 +126,7 @@ public class AdminCorporateCertController {
         //赠送7天VIP会员
         //检查是不是已经赠送过
         List<MemberLog> memberLogList = memberLogService.queryMemberLog(new MemberLogRequest() {{
-            setUserId(userById.getId());
+            setUserId(userCorporateCertMatchById.getUserId());
             setActionType(MemberActionTypeEnum.企业认证赠送.getValue());
         }});
 
@@ -131,7 +136,7 @@ public class AdminCorporateCertController {
             Msg<Member> memberMsg;
             if(validMemberByUserId==null){
                 memberMsg = memberService.createMember(new Member() {{
-                    setUserId(userById.getId());
+                    setUserId(userCorporateCertMatchById.getUserId());
                     setStatus(StatusEnum.可用.getValue());
                     setBeginTime(new Date());
                     setOverTime(DateUtil.offsiteDay(new Date(), 7));
@@ -149,7 +154,7 @@ public class AdminCorporateCertController {
                 userService.updateUser(userById);
             }
             memberLogService.createMemberLog(new MemberLog(){{
-                setUserId(userById.getId());
+                setUserId(userCorporateCertMatchById.getUserId());
                 setActionType(MemberActionTypeEnum.企业认证赠送.getValue());
                 setDays(7);
                 setRemark("企业认证赠送");
@@ -172,7 +177,10 @@ public class AdminCorporateCertController {
         }
 
         User userById = userService.getUserById(userCorporateCertMatchById.getUserId());
-        if(userById!=null && userById.getCertLevel().equals(UserCertLevelEnum.未认证.getValue())){
+        if(userById==null){
+            return DataResponse.error("用户信息错误！");
+        }
+        if(userById.getCertLevel().equals(UserCertLevelEnum.未认证.getValue())){
             return DataResponse.error("个人认证后，才能审核企业认证！");
         }
 
@@ -206,10 +214,8 @@ public class AdminCorporateCertController {
 
         //如果原来认证成功，回退到个人认证;
         if(fromOk){
-            if(userById!=null && userById.getCertLevel().equals(UserCertLevelEnum.企业认证.getValue())){
-                userById.setCertLevel(UserCertLevelEnum.个人认证.getValue());
-                userService.updateUser(userById);
-            }
+            userById.setCertLevel(UserCertLevelEnum.个人认证.getValue());
+            userService.updateUser(userById);
         }
 
         certTask.createPush(new PushBody() {{

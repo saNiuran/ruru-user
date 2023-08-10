@@ -1,7 +1,7 @@
 package com.ruru.plastic.user.enume;
 
 public enum AppTypeEnum {
-    安卓(0), 苹果(1);
+    安卓(0), 苹果(1), 公众号(2), 小程序(3);
     private final Integer value;
 
     AppTypeEnum(Integer value) {

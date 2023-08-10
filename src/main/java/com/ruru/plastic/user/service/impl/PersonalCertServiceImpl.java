@@ -37,7 +37,7 @@ public class PersonalCertServiceImpl implements PersonalCertService {
 
     @Override
     public PersonalCertResponse getPersonalCertResponseById(Long id){
-        PersonalCert personalCertByUserId = getPersonalCertByUserId(id);
+        PersonalCert personalCertByUserId = getPersonalCertById(id);
         if(personalCertByUserId==null){
             return null;
         }
