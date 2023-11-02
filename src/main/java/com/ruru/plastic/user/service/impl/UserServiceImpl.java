@@ -55,6 +55,19 @@ public class UserServiceImpl implements UserService {
         return userMapper.selectOneByExample(example);
     }
 
+    @Override
+    public List<User> queryUser(User user){
+        UserExample example = new UserExample();
+        UserExample.Criteria criteria = example.createCriteria();
+
+        UserRequest request = new UserRequest();
+        BeanUtils.copyProperties(user,request);
+
+        queryUser(request,criteria);
+
+        return userMapper.selectByExample(example);
+    }
+
     //创建用户，手机号不能重复; 不自动设置用户为公司第一联系人
     @Override
     public Msg<User> createUser(User user) {

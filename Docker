@@ -6,4 +6,4 @@ RUN echo 'Asia/Shanghai' >/etc/timezone
 RUN sh -c 'touch /app.jar'
 ENV JAVA_OPTS="-server -Xms600m -Xmx600m -XX:MaxNewSize=256m -Djava.awt.headless=true "
 EXPOSE 8801
-ENTRYPOINT [ "sh", "-c", "java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -Xdebug -Xrunjdwp:transport=dt_socket,address=6501,server=y,suspend=n -jar /app.jar" ]
+ENTRYPOINT [ "sh", "-c", "java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app.jar" ]

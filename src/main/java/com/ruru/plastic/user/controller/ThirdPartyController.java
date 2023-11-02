@@ -5,6 +5,7 @@ import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.enume.ResponseEnum;
 import com.ruru.plastic.user.enume.StatusEnum;
 import com.ruru.plastic.user.enume.UserTypeEnum;
+import com.ruru.plastic.user.feign.ChannelFeignService;
 import com.ruru.plastic.user.model.AdminUser;
 import com.ruru.plastic.user.model.ThirdParty;
 import com.ruru.plastic.user.model.User;
@@ -52,6 +53,8 @@ public class ThirdPartyController {
     private AdminUserService adminUserService;
     @Autowired
     private RedisService redisService;
+    @Autowired
+    private ChannelFeignService channelFeignService;
 
     @Description("注册的时候，先检测是不是已经绑定过；如果绑定过，前端直接调用登录接口；如果没有绑定过，前端调用绑定接口")
     @PostMapping("/register")
@@ -173,6 +176,9 @@ public class ThirdPartyController {
         userAccountService.createUserAccount(new UserAccount() {{
             setUserId(userMsg.getData().getId());
         }});
+
+        //通知channel模块
+        channelFeignService.registerUserSuccess(userMsg.getData());
 
         thirdPartyByTypeAndUid.setUserId(userMsg.getData().getId());
         Msg<ThirdParty> thirdPartyMsg = thirdPartyService.updateThirdParty(thirdPartyByTypeAndUid);

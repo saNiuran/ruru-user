@@ -16,6 +16,8 @@ public interface UserService {
 
     User getValidUserByMobile(String mobile);
 
+    List<User> queryUser(User user);
+
     //创建用户，手机号不能重复
     Msg<User> createUser(User user);
 

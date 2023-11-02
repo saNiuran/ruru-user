@@ -8,8 +8,10 @@ import com.ruru.plastic.user.net.CurrentUser;
 import com.ruru.plastic.user.net.LoginRequired;
 import com.ruru.plastic.user.redis.RedisService;
 import com.ruru.plastic.user.request.LogonRequest;
+import com.ruru.plastic.user.request.UserMatchRequest;
 import com.ruru.plastic.user.request.UserRequest;
 import com.ruru.plastic.user.response.DataResponse;
+import com.ruru.plastic.user.response.UserMatchResponse;
 import com.ruru.plastic.user.response.UserResponse;
 import com.ruru.plastic.user.task.PushTask;
 import com.ruru.plastic.user.task.TokenTask;
@@ -37,6 +39,10 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private UserWxService userWxService;
+    @Autowired
+    private UserMatchService userMatchService;
     @Autowired
     private CompanyService companyService;
     @Autowired
@@ -258,7 +264,7 @@ public class UserController {
             return DataResponse.error("无效电话号码");
         }
         //检查smsCode是不是有效  (测试系统，不校验验证码)
-        if (!Arrays.asList("13901655769", "18057942731","18818881888").contains(request.getMobile())) {
+        if (!Arrays.asList("13901655769", "18057942731","18818881888","13584851021").contains(request.getMobile())) {
             String s = redisService.getSmsCode(Constants.SMS_CODE_LOGIN + ":" + request.getMobile());
             if (StringUtils.isEmpty(s)) {
                 return DataResponse.error("验证码已经失效！");
@@ -287,7 +293,8 @@ public class UserController {
             }});
 
             //通知channel模块
-            channelFeignService.registerUserSuccess(userByMobile);
+            channelFeignService.registerUserSuccess(msg.getData());
+
         }else if(userByMobile.getStatus().equals(UserStatusEnum.注销.getValue())){
 //            if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-15).getTime()) {
                 //刚注销15天，给反悔期15天
@@ -328,6 +335,78 @@ public class UserController {
             }
         }
         return DataResponse.success(response);
+    }
+
+
+    /**
+     * 公众号用户登录，返回用户token (appType===2)
+     */
+    @PostMapping("/userLogin/h5mp")
+    public DataResponse<UserMatchResponse> userLoginH5Mp(@RequestBody LogonRequest request, HttpServletRequest servletRequest) {
+        if (request == null || StringUtils.isEmpty(request.getMobile()) || StringUtils.isEmpty(request.getSmsCode())
+                || StringUtils.isEmpty(servletRequest.getHeader("openId")) || StringUtils.isEmpty(servletRequest.getHeader("appType"))) {
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+
+        String openId = servletRequest.getHeader("openId");
+
+        UserWx wx = userWxService.getUserWxByOpenId(openId);
+        if(wx==null){
+            Msg<UserWx> wxMsg = userWxService.createUserWx(new UserWx() {{
+                setOpenid(openId);
+                setType(servletRequest.getIntHeader("appType"));
+            }});
+            if(StringUtils.isNotEmpty(wxMsg.getErrorMsg())){
+                return DataResponse.error(wxMsg.getErrorMsg());
+            }
+            wx = wxMsg.getData();
+        }
+
+        //校验手机号是不是有效
+        Matcher tmpMatcher = Constants.CHINA_MOBILE_PATTERN.matcher(request.getMobile());
+        if (!tmpMatcher.find()) {
+            return DataResponse.error("无效电话号码");
+        }
+        //检查smsCode是不是有效  (测试系统，不校验验证码)
+        if (!Arrays.asList("13901655769", "18057942731","18818881888","13584851021").contains(request.getMobile())) {
+            String s = redisService.getSmsCode(Constants.SMS_CODE_LOGIN + ":" + request.getMobile());
+            if (StringUtils.isEmpty(s)) {
+                return DataResponse.error("验证码已经失效！");
+            }
+            if (!s.equals(request.getSmsCode())) {
+                return DataResponse.error("验证码错误！");
+            }
+        }
+
+        //检查是不是已经有用户 且有效的
+        User userByMobile = userService.getUserByMobile(request.getMobile());
+        if (userByMobile == null || !userByMobile.getStatus().equals(UserStatusEnum.有效.getValue())) {
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+
+        UserMatchRequest userMatchRequest = new UserMatchRequest();
+        userMatchRequest.setUserId(userByMobile.getId());
+        userMatchRequest.setTargetId(wx.getId());
+        userMatchRequest.setTargetType(UserTargetTypeEnum.微信公众号.getValue());
+        List<UserMatch> userMatches = userMatchService.queryUserMatch(userMatchRequest);
+
+        UserMatch userMatch;
+        if(userMatches.size()==0){
+            userMatch = userMatchService.createUserMatch(userMatchRequest).getData();
+        }else{
+            userMatch = userMatches.get(0);
+        }
+
+        UserMatchResponse userMatchResponse = new UserMatchResponse();
+        BeanUtils.copyProperties(userMatch,userMatchResponse);
+
+        UserResponse response = new UserResponse();
+        BeanUtils.copyProperties(userByMobile, response);
+        response.setToken(tokenTask.createToken(userByMobile.getId(), servletRequest.getIntHeader("appType"), openId, UserTypeEnum.User.getValue()));
+        userMatchResponse.setUser(response);
+        userMatchResponse.setUserWx(wx);
+
+        return DataResponse.success(userMatchResponse);
     }
 
     /**
@@ -575,4 +654,127 @@ public class UserController {
         return DataResponse.error("权限配置错误！");
     }
 
+
+    /**
+     * errMsg "非认证会员","非VIP会员"
+     */
+
+    @LoginRequired
+    @PostMapping("/privilege/check2")
+    public DataResponse<Integer> checkMyPrivilege2(@RequestBody EnquiryEventLog enquiryEventLog, @CurrentUser User me){
+        if(enquiryEventLog==null || enquiryEventLog.getEventType()==null){
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+        if(!enquiryEventLog.getEventType().equals(EnquiryEventTypeEnum.发布.getValue()) && enquiryEventLog.getEnquiryId()==null){
+            return DataResponse.error(Constants.ERROR_PARAMETER);
+        }
+
+        //检查此次事件是否当日重复事件
+        if(!enquiryEventLog.getEventType().equals(EnquiryEventTypeEnum.发布.getValue())) {        //非发布询价动作
+            DataResponse<Integer> logOfTodayDataResponse = bidFeignService.sameEnquiryEventLogOfToday(new EnquiryEventLog() {{
+                setEnquiryId(enquiryEventLog.getEnquiryId());
+                setUserId(me.getId());
+                setEventType(enquiryEventLog.getEventType());
+            }});
+
+            if (logOfTodayDataResponse.getRetCode() != 0) {
+                return DataResponse.error(logOfTodayDataResponse.getMessage());
+            }
+
+            if (logOfTodayDataResponse.getData().equals(1)) {  //今天此条信息操作有重复的，不检查权限
+                return DataResponse.success(1);
+            }
+        }
+
+        //下面表示是不重复，继续检查
+        UserResponse userResponseById = getUserResponseById(me.getId());
+        Privilege mPrivilege = new Privilege();
+        mPrivilege.setAction(enquiryEventLog.getEventType());
+        assert userResponseById != null;
+        mPrivilege.setMemberLevel(userResponseById.getMemberLevel());
+        Long deposit = userResponseById.getUserAccount().getDeposit();
+        if(deposit==null || deposit==0){
+            mPrivilege.setDepositConfigId(0L);
+        }else{
+            DataResponse<List<DepositConfig>> listDataResponse = financeFeignService.listValidDepositConfig();
+            if(listDataResponse.getRetCode()!=0){
+                return DataResponse.error(listDataResponse.getMessage());
+            }
+            mPrivilege.setDepositConfigId(0L);
+            for(DepositConfig config: listDataResponse.getData()){
+                if(config.getAmount()<=deposit){
+                    mPrivilege.setDepositConfigId(config.getId());
+                }else{
+                    break;
+                }
+            }
+        }
+        DataResponse<List<Privilege>> dataResponse = configFeignService.queryPrivilege(mPrivilege);
+        if(dataResponse.getRetCode()!=0){
+            return DataResponse.error(dataResponse.getMessage());
+        }
+
+        if(dataResponse.getData().size()>0){
+            mPrivilege = dataResponse.getData().get(0);
+
+            if(mPrivilege.getValue()==null){
+                //这里要检查用户是否处于试用期，试用期间，允许报价
+
+//                Member memberByUserId = memberService.getMemberByUserId(me.getId());
+//                if(memberByUserId==null || memberByUserId.getOverTime().before(new Date())){
+//                    return DataResponse.success(0);
+//                }else{
+//                    return DataResponse.success(1);
+//                }
+                if(me.getMemberLevel()!=null && me.getMemberLevel()>0){
+                    return DataResponse.success(1);
+                }else {
+                    return DataResponse.success(0);
+                }
+
+            }else if(mPrivilege.getValue()==0){     //表示不限制
+                return DataResponse.success(1);
+            }else{
+                //检查数字有没有超出
+                DataResponse<EventCounter> dataResponse1 = bidFeignService.countEnquiryAndQuotationOfToday(new User() {{
+                    setId(me.getId());
+                }});
+                if(dataResponse1.getRetCode()!=0){
+                    return DataResponse.error(dataResponse1.getMessage());
+                }
+                EventCounter counter  = dataResponse1.getData();
+                boolean result = true;
+                switch (EnquiryEventTypeEnum.getEnum(enquiryEventLog.getEventType())){
+                    case 发布:
+                        if(counter.getEnquiryPostCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                    case 报价:
+                        if(counter.getQuotationCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                    case 查看:
+                        if(counter.getEnquiryCheckCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                    case 打电话:
+                        if(counter.getEnquiryCallCounter()>=mPrivilege.getValue()) {
+                            result = false;
+                        }
+                        break;
+                }
+                return DataResponse.success(result?1:0);
+            }
+        }
+        return DataResponse.error("权限配置错误！");
+    }
+
+    @Description("bid模块接口，不能暴露给前端")
+    @PostMapping("/query/id/list")
+    public DataResponse<List<Long>> queryUserIdList(@RequestBody User user){
+        return DataResponse.success(userService.queryUser(user).stream().map(User::getId).collect(Collectors.toList()));
+    }
 }

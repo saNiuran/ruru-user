@@ -1,9 +1,12 @@
 package com.ruru.plastic.user.task;
 
+import com.ruru.plastic.user.enume.MemberActionTypeEnum;
 import com.ruru.plastic.user.enume.StatusEnum;
 import com.ruru.plastic.user.enume.UserMemberLevelEnum;
 import com.ruru.plastic.user.model.Member;
+import com.ruru.plastic.user.model.MemberLog;
 import com.ruru.plastic.user.model.User;
+import com.ruru.plastic.user.service.MemberLogService;
 import com.ruru.plastic.user.service.MemberService;
 import com.ruru.plastic.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,8 @@ public class ScheduleTask {
     private MemberService memberService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private MemberLogService memberLogService;
 
     @Scheduled(cron="0 30 0 * * *")
     public void overdueUserMember(){
@@ -32,6 +37,13 @@ public class ScheduleTask {
 
             member.setStatus(StatusEnum.不可用.getValue());
             memberService.updateMember(member);
+
+            memberLogService.createMemberLog(new MemberLog(){{
+                setUserId(member.getUserId());
+                setActionType(MemberActionTypeEnum.过期.getValue());
+                setDays(0);
+                setRemark("会员过期");
+            }});
         }
     }
 }

@@ -18,6 +18,7 @@ import com.ruru.plastic.user.task.CertTask;
 import com.xiaoleilu.hutool.date.DateUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +44,8 @@ public class AdminCorporateCertController {
     private MemberService memberService;
     @Autowired
     private MemberLogService memberLogService;
+    @Value("${cert.corporate.free.day}")
+    private Integer freeDays;
 
     @AdminRequired
     @PostMapping("/info")
@@ -139,10 +142,10 @@ public class AdminCorporateCertController {
                     setUserId(userCorporateCertMatchById.getUserId());
                     setStatus(StatusEnum.可用.getValue());
                     setBeginTime(new Date());
-                    setOverTime(DateUtil.offsiteDay(new Date(), 7));
+                    setOverTime(DateUtil.offsiteDay(new Date(), freeDays));
                 }});
             }else{
-                validMemberByUserId.setOverTime(DateUtil.offsiteDay(validMemberByUserId.getOverTime(),7));
+                validMemberByUserId.setOverTime(DateUtil.offsiteDay(validMemberByUserId.getOverTime(),freeDays));
                 memberMsg = memberService.updateMember(validMemberByUserId);
             }
             if(StringUtils.isNotEmpty(memberMsg.getErrorMsg())){
@@ -156,7 +159,7 @@ public class AdminCorporateCertController {
             memberLogService.createMemberLog(new MemberLog(){{
                 setUserId(userCorporateCertMatchById.getUserId());
                 setActionType(MemberActionTypeEnum.企业认证赠送.getValue());
-                setDays(7);
+                setDays(freeDays);
                 setRemark("企业认证赠送");
             }});
         }
