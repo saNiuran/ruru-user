@@ -11,6 +11,8 @@ public class Privilege {
 
     private Integer value;
 
+    private Integer lordType;
+
     public Long getId() {
         return id;
     }
@@ -49,5 +51,13 @@ public class Privilege {
 
     public void setValue(Integer value) {
         this.value = value;
+    }
+
+    public Integer getLordType() {
+        return lordType;
+    }
+
+    public void setLordType(Integer lordType) {
+        this.lordType = lordType;
     }
 }

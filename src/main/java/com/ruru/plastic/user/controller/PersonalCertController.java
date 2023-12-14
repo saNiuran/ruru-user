@@ -15,37 +15,39 @@ import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.response.PersonalCertResponse;
 import com.ruru.plastic.user.service.CertificateLogService;
 import com.ruru.plastic.user.service.PersonalCertService;
+import com.ruru.plastic.user.service.UserService;
 import com.ruru.plastic.user.task.CertTask;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/personal/cert")
 public class PersonalCertController {
-    
+
     @Autowired
     private PersonalCertService personalCertService;
     @Autowired
     private CertificateLogService certificateLogService;
     @Autowired
     private CertTask certTask;
+    @Autowired
+    private UserService userService;
 
     @LoginRequired
     @PostMapping("/info")
-    public DataResponse<PersonalCert> getPersonalCertById(@RequestBody PersonalCert personalCert){
-        if(personalCert==null || personalCert.getId()==null){
+    public DataResponse<PersonalCert> getPersonalCertById(@RequestBody PersonalCert personalCert) {
+        if (personalCert == null || personalCert.getId() == null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
         PersonalCert personalCertById = personalCertService.getPersonalCertById(personalCert.getId());
-        if(personalCertById==null){
+        if (personalCertById == null) {
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
         return DataResponse.success(personalCertById);
@@ -53,9 +55,9 @@ public class PersonalCertController {
 
     @LoginRequired
     @PostMapping("/info/my")
-    public DataResponse<PersonalCert> getMyPersonalCert(@CurrentUser User user){
+    public DataResponse<PersonalCert> getMyPersonalCert(@CurrentUser User user) {
         PersonalCert personalCertByUserId = personalCertService.getPersonalCertByUserId(user.getId());
-        if(personalCertByUserId==null){
+        if (personalCertByUserId == null) {
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
         return DataResponse.success(personalCertByUserId);
@@ -63,14 +65,14 @@ public class PersonalCertController {
 
     @LoginRequired
     @PostMapping("/new")
-    public DataResponse<PersonalCert> createPersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user){
+    public DataResponse<PersonalCert> createPersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user) {
         personalCert.setUserId(user.getId());
         Msg<PersonalCert> msg = personalCertService.createPersonalCert(personalCert);
-        if(StringUtils.isNotEmpty(msg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(msg.getErrorMsg())) {
             return DataResponse.error(msg.getErrorMsg());
         }
 
-        certificateLogService.createCertificateLog(new CertificateLog(){{
+        certificateLogService.createCertificateLog(new CertificateLog() {{
             setOperatorType(OperatorTypeEnum.用户.getValue());
             setOperatorId(user.getId());
             setLordId(msg.getData().getId());
@@ -80,7 +82,7 @@ public class PersonalCertController {
         }});
 
         //创建管理员通知消息
-        certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理,null);
+        certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理, null);
 
         certTask.createPush(new PushBody() {{
             setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理);
@@ -97,25 +99,25 @@ public class PersonalCertController {
 
     @LoginRequired
     @PostMapping("/update")
-    public DataResponse<PersonalCert> updatePersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user){
+    public DataResponse<PersonalCert> updatePersonalCert(@RequestBody PersonalCert personalCert, @CurrentUser User user) {
         PersonalCert personalCertByUserId = personalCertService.getPersonalCertByUserId(user.getId());
-        if(personalCertByUserId==null){
+        if (personalCertByUserId == null) {
             return DataResponse.error(Constants.ERROR_NO_INFO);
         }
 
-        if(personalCertByUserId.getStatus().equals(CertStatusEnum.审核通过.getValue())
-                || personalCertByUserId.getStatus().equals(CertStatusEnum.失效.getValue())){
-            return DataResponse.error("当前状态为"+CertStatusEnum.getEnum(personalCertByUserId.getStatus())+"，不能修改！");
+        if (personalCertByUserId.getStatus().equals(CertStatusEnum.审核通过.getValue())
+                || personalCertByUserId.getStatus().equals(CertStatusEnum.失效.getValue())) {
+            return DataResponse.error("当前状态为" + CertStatusEnum.getEnum(personalCertByUserId.getStatus()) + "，不能修改！");
         }
 
         personalCert.setId(personalCertByUserId.getId());
         personalCert.setStatus(CertStatusEnum.待审核.getValue());
         Msg<PersonalCert> msg = personalCertService.updatePersonalCert(personalCert);
-        if(StringUtils.isNotEmpty(msg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(msg.getErrorMsg())) {
             return DataResponse.error(msg.getErrorMsg());
         }
 
-        certificateLogService.createCertificateLog(new CertificateLog(){{
+        certificateLogService.createCertificateLog(new CertificateLog() {{
             setOperatorType(OperatorTypeEnum.用户.getValue());
             setOperatorId(user.getId());
             setLordId(msg.getData().getId());
@@ -125,7 +127,7 @@ public class PersonalCertController {
         }});
 
         //创建管理员通知消息
-        certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理,null);
+        certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理, null);
 
         certTask.createPush(new PushBody() {{
             setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理);
@@ -142,9 +144,9 @@ public class PersonalCertController {
 
     @LoginRequired
     @PostMapping("/delete")
-    public DataResponse<Integer> deletePersonalCert(@RequestBody PersonalCert personalCert){
+    public DataResponse<Integer> deletePersonalCert(@RequestBody PersonalCert personalCert) {
         Msg<Integer> msg = personalCertService.deletePersonalCert(personalCert);
-        if(StringUtils.isNotEmpty(msg.getErrorMsg())){
+        if (StringUtils.isNotEmpty(msg.getErrorMsg())) {
             return DataResponse.error(msg.getErrorMsg());
         }
         return DataResponse.success(msg.getData());
@@ -152,8 +154,30 @@ public class PersonalCertController {
 
     @LoginRequired
     @PostMapping("/filter")
-    public DataResponse<PageInfo<PersonalCertResponse>> filterPersonalCertResponse(@RequestBody PersonalCertRequest request){
-        return DataResponse.success(personalCertService.filterPersonalCertResponse(request));
+    public DataResponse<PageInfo<PersonalCertResponse>> filterPersonalCertResponse(@RequestBody PersonalCertRequest request) {
+        PageInfo<PersonalCert> pageInfo = personalCertService.filterPersonalCert(request);
+        PageInfo<PersonalCertResponse> responsePageInfo = new PageInfo<>();
+        BeanUtils.copyProperties(pageInfo, responsePageInfo);
+
+        List<PersonalCertResponse> responseList = new ArrayList<>();
+
+        for (PersonalCert personalCert : pageInfo.getList()) {
+            responseList.add(getPersonalCertResponseById(personalCert.getId()));
+        }
+        responsePageInfo.setList(responseList);
+
+        return DataResponse.success(responsePageInfo);
+    }
+
+    private PersonalCertResponse getPersonalCertResponseById(Long id) {
+        PersonalCert personalCertByUserId = personalCertService.getPersonalCertById(id);
+        if (personalCertByUserId == null) {
+            return null;
+        }
+        PersonalCertResponse response = new PersonalCertResponse();
+        BeanUtils.copyProperties(personalCertByUserId, response);
+        response.setUser(userService.getUserById(personalCertByUserId.getUserId()));
+        return response;
     }
 
 }

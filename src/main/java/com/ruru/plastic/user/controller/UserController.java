@@ -75,6 +75,8 @@ public class UserController {
     private FinanceFeignService financeFeignService;
     @Autowired
     private ChannelFeignService channelFeignService;
+    @Autowired
+    private BoardFeignService boardFeignService;
 
     @LoginRequired
     @PostMapping("/info")
@@ -212,19 +214,31 @@ public class UserController {
         BeanUtils.copyProperties(response, pack);
 
         UserCounter counter = new UserCounter();
+        DataResponse<UserCounter> userCounterDataResponse = bidFeignService.countEnquiryAndStock(user);
+        if (userCounterDataResponse.getRetCode() == 0) {
+            BeanUtils.copyProperties(userCounterDataResponse.getData(),counter);
+        }
+
         DataResponse<UserCounter> messageDataResponse = smsFeignService.countMessage(user);
         if (messageDataResponse.getRetCode() == 0) {
             counter.setMessageCounter(messageDataResponse.getData().getMessageCounter());
             counter.setUnreadMessageCounter(messageDataResponse.getData().getUnreadMessageCounter());
         }
-        DataResponse<UserCounter> userCounterDataResponse = bidFeignService.countEnquiryAndQuotation(user);
-        if (userCounterDataResponse.getRetCode() == 0) {
-            counter.setEnquiryCounter(userCounterDataResponse.getData().getEnquiryCounter());
-            counter.setQuotationCounter(userCounterDataResponse.getData().getQuotationCounter());
-            counter.setFavoriteEnquiryCounter(userCounterDataResponse.getData().getFavoriteEnquiryCounter());
+
+        DataResponse<Integer> reviewDataResponse = boardFeignService.queryReviewLog(new ReviewLogRequest() {{
+            setOperatorId(user.getId());
+        }});
+        if(reviewDataResponse.getRetCode()==0){
+            counter.setReviewCounter(reviewDataResponse.getData());
         }
         pack.setUserCounter(counter);
 
+        DataResponse<Integer> unreadReplyOnReview = boardFeignService.countUnreadReplyOnReview(new Review() {{
+            setReviewerId(user.getId());
+        }});
+        if(unreadReplyOnReview.getRetCode()==0){
+            counter.setUnreadReplyCounter(unreadReplyOnReview.getData());
+        }
 
         pack.setPersonalCert(personalCertService.getPersonalCertByUserId(user.getId()));
 
@@ -552,6 +566,7 @@ public class UserController {
         //下面表示是不重复，继续检查
         UserResponse userResponseById = getUserResponseById(me.getId());
         Privilege mPrivilege = new Privilege();
+        mPrivilege.setLordType(LordTypeEnum.询价.getValue());
         mPrivilege.setAction(enquiryEventLog.getEventType());
         assert userResponseById != null;
         mPrivilege.setMemberLevel(userResponseById.getMemberLevel());
@@ -581,44 +596,17 @@ public class UserController {
             mPrivilege = dataResponse.getData().get(0);
 
             if(mPrivilege.getValue()==null){
-                //这里要检查用户是否处于试用期，试用期间，允许报价
-                //只可能有1条
-//                Date overtime = new Date();
-//                List<MemberLog> list1 = memberLogService.queryMemberLog(new MemberLogRequest() {{
-//                    setActionType(MemberActionTypeEnum.个人认证赠送.getValue());
-//                    setUserId(me.getId());
-//                }});
-//                if(list1.size()>0){
-//                    overtime = DateUtil.offsiteDay(list1.get(0).getCreateTime(),list1.get(0).getDays());
-//                }
-//
-//                List<MemberLog> list2= memberLogService.queryMemberLog(new MemberLogRequest() {{
-//                    setActionType(MemberActionTypeEnum.企业认证赠送.getValue());
-//                    setUserId(me.getId());
-//                }});
-//                if(list2.size()>0){
-//                        Date overtime2 = DateUtil.offsiteDay(list2.get(0).getCreateTime(),list2.get(0).getDays());
-//                        overtime = overtime.before(overtime2)?overtime2:overtime;
-//                }
-//
-//                if(overtime.before(new Date())){        //不在试用期
-//                    return DataResponse.success(0);
-//                }else{
-//                    return DataResponse.success(1);
-//                }
-
-                Member memberByUserId = memberService.getMemberByUserId(me.getId());
-                if(memberByUserId==null || memberByUserId.getOverTime().before(new Date())){
-                    return DataResponse.success(0);
-                }else{
+                if(me.getMemberLevel()!=null && me.getMemberLevel()>0){
                     return DataResponse.success(1);
+                }else {
+                    return DataResponse.success(0);
                 }
 
             }else if(mPrivilege.getValue()==0){     //表示不限制
                 return DataResponse.success(1);
             }else{
                 //检查数字有没有超出
-                DataResponse<EventCounter> dataResponse1 = bidFeignService.countEnquiryAndQuotationOfToday(new User() {{
+                DataResponse<EventCounter> dataResponse1 = bidFeignService.countEnquiryAndStockOfToday(new User() {{
                     setId(me.getId());
                 }});
                 if(dataResponse1.getRetCode()!=0){
@@ -654,25 +642,20 @@ public class UserController {
         return DataResponse.error("权限配置错误！");
     }
 
-
-    /**
-     * errMsg "非认证会员","非VIP会员"
-     */
-
     @LoginRequired
-    @PostMapping("/privilege/check2")
-    public DataResponse<Integer> checkMyPrivilege2(@RequestBody EnquiryEventLog enquiryEventLog, @CurrentUser User me){
+    @PostMapping("/privilege/check/stock")
+    public DataResponse<Integer> checkMyPrivilege(@RequestBody StockEventLog enquiryEventLog, @CurrentUser User me){
         if(enquiryEventLog==null || enquiryEventLog.getEventType()==null){
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
-        if(!enquiryEventLog.getEventType().equals(EnquiryEventTypeEnum.发布.getValue()) && enquiryEventLog.getEnquiryId()==null){
+        if(!enquiryEventLog.getEventType().equals(StockEventTypeEnum.发布.getValue()) && enquiryEventLog.getStockId()==null){
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
 
         //检查此次事件是否当日重复事件
-        if(!enquiryEventLog.getEventType().equals(EnquiryEventTypeEnum.发布.getValue())) {        //非发布询价动作
-            DataResponse<Integer> logOfTodayDataResponse = bidFeignService.sameEnquiryEventLogOfToday(new EnquiryEventLog() {{
-                setEnquiryId(enquiryEventLog.getEnquiryId());
+        if(!enquiryEventLog.getEventType().equals(StockEventTypeEnum.发布.getValue())) {        //非发布询价动作
+            DataResponse<Integer> logOfTodayDataResponse = bidFeignService.sameStockEventLogOfToday(new StockEventLog() {{
+                setStockId(enquiryEventLog.getStockId());
                 setUserId(me.getId());
                 setEventType(enquiryEventLog.getEventType());
             }});
@@ -689,6 +672,7 @@ public class UserController {
         //下面表示是不重复，继续检查
         UserResponse userResponseById = getUserResponseById(me.getId());
         Privilege mPrivilege = new Privilege();
+        mPrivilege.setLordType(LordTypeEnum.库存.getValue());
         mPrivilege.setAction(enquiryEventLog.getEventType());
         assert userResponseById != null;
         mPrivilege.setMemberLevel(userResponseById.getMemberLevel());
@@ -718,14 +702,6 @@ public class UserController {
             mPrivilege = dataResponse.getData().get(0);
 
             if(mPrivilege.getValue()==null){
-                //这里要检查用户是否处于试用期，试用期间，允许报价
-
-//                Member memberByUserId = memberService.getMemberByUserId(me.getId());
-//                if(memberByUserId==null || memberByUserId.getOverTime().before(new Date())){
-//                    return DataResponse.success(0);
-//                }else{
-//                    return DataResponse.success(1);
-//                }
                 if(me.getMemberLevel()!=null && me.getMemberLevel()>0){
                     return DataResponse.success(1);
                 }else {
@@ -736,7 +712,7 @@ public class UserController {
                 return DataResponse.success(1);
             }else{
                 //检查数字有没有超出
-                DataResponse<EventCounter> dataResponse1 = bidFeignService.countEnquiryAndQuotationOfToday(new User() {{
+                DataResponse<EventCounter> dataResponse1 = bidFeignService.countEnquiryAndStockOfToday(new User() {{
                     setId(me.getId());
                 }});
                 if(dataResponse1.getRetCode()!=0){
@@ -744,24 +720,24 @@ public class UserController {
                 }
                 EventCounter counter  = dataResponse1.getData();
                 boolean result = true;
-                switch (EnquiryEventTypeEnum.getEnum(enquiryEventLog.getEventType())){
+                switch (StockEventTypeEnum.getEnum(enquiryEventLog.getEventType())){
                     case 发布:
-                        if(counter.getEnquiryPostCounter()>=mPrivilege.getValue()) {
+                        if(counter.getStockPostCounter()>=mPrivilege.getValue()) {
                             result = false;
                         }
                         break;
-                    case 报价:
+                    case 砍一刀:
                         if(counter.getQuotationCounter()>=mPrivilege.getValue()) {
                             result = false;
                         }
                         break;
                     case 查看:
-                        if(counter.getEnquiryCheckCounter()>=mPrivilege.getValue()) {
+                        if(counter.getStockCheckCounter()>=mPrivilege.getValue()) {
                             result = false;
                         }
                         break;
                     case 打电话:
-                        if(counter.getEnquiryCallCounter()>=mPrivilege.getValue()) {
+                        if(counter.getStockCallCounter()>=mPrivilege.getValue()) {
                             result = false;
                         }
                         break;
@@ -771,6 +747,8 @@ public class UserController {
         }
         return DataResponse.error("权限配置错误！");
     }
+
+
 
     @Description("bid模块接口，不能暴露给前端")
     @PostMapping("/query/id/list")

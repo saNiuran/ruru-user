@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.ruru.plastic.user.dao.BlueCertMapper" >
+  <resultMap id="BaseResultMap" type="com.ruru.plastic.user.model.BlueCert" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="user_id" property="userId" jdbcType="BIGINT" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="social_code" property="socialCode" jdbcType="VARCHAR" />
+    <result column="licence_addr" property="licenceAddr" jdbcType="VARCHAR" />
+    <result column="setup_time" property="setupTime" jdbcType="DATE" />
+    <result column="license_img" property="licenseImg" jdbcType="VARCHAR" />
+    <result column="authority_img" property="authorityImg" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="legal_person" property="legalPerson" jdbcType="VARCHAR" />
+    <result column="contact_name" property="contactName" jdbcType="VARCHAR" />
+    <result column="contact_mobile" property="contactMobile" jdbcType="VARCHAR" />
+    <result column="contact_id_no" property="contactIdNo" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <sql id="Example_Where_Clause" >
+    <where >
+      <foreach collection="oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause" >
+    <where >
+      <foreach collection="example.oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List" >
+    id, user_id, `name`, social_code, licence_addr, setup_time, license_img, authority_img, 
+    `status`, legal_person, contact_name, contact_mobile, contact_id_no, create_time, 
+    update_time
+  </sql>
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.BlueCertExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from blue_cert
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    from blue_cert
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from blue_cert
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.ruru.plastic.user.model.BlueCertExample" >
+    delete from blue_cert
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.ruru.plastic.user.model.BlueCert" >
+    <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into blue_cert (user_id, `name`, social_code, 
+      licence_addr, setup_time, license_img, 
+      authority_img, `status`, legal_person, 
+      contact_name, contact_mobile, contact_id_no, 
+      create_time, update_time)
+    values (#{userId,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{socialCode,jdbcType=VARCHAR}, 
+      #{licenceAddr,jdbcType=VARCHAR}, #{setupTime,jdbcType=DATE}, #{licenseImg,jdbcType=VARCHAR}, 
+      #{authorityImg,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, #{legalPerson,jdbcType=VARCHAR}, 
+      #{contactName,jdbcType=VARCHAR}, #{contactMobile,jdbcType=VARCHAR}, #{contactIdNo,jdbcType=VARCHAR}, 
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.BlueCert" >
+    <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into blue_cert
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="userId != null" >
+        user_id,
+      </if>
+      <if test="name != null" >
+        `name`,
+      </if>
+      <if test="socialCode != null" >
+        social_code,
+      </if>
+      <if test="licenceAddr != null" >
+        licence_addr,
+      </if>
+      <if test="setupTime != null" >
+        setup_time,
+      </if>
+      <if test="licenseImg != null" >
+        license_img,
+      </if>
+      <if test="authorityImg != null" >
+        authority_img,
+      </if>
+      <if test="status != null" >
+        `status`,
+      </if>
+      <if test="legalPerson != null" >
+        legal_person,
+      </if>
+      <if test="contactName != null" >
+        contact_name,
+      </if>
+      <if test="contactMobile != null" >
+        contact_mobile,
+      </if>
+      <if test="contactIdNo != null" >
+        contact_id_no,
+      </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
+      <if test="updateTime != null" >
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="userId != null" >
+        #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="name != null" >
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="socialCode != null" >
+        #{socialCode,jdbcType=VARCHAR},
+      </if>
+      <if test="licenceAddr != null" >
+        #{licenceAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="setupTime != null" >
+        #{setupTime,jdbcType=DATE},
+      </if>
+      <if test="licenseImg != null" >
+        #{licenseImg,jdbcType=VARCHAR},
+      </if>
+      <if test="authorityImg != null" >
+        #{authorityImg,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="legalPerson != null" >
+        #{legalPerson,jdbcType=VARCHAR},
+      </if>
+      <if test="contactName != null" >
+        #{contactName,jdbcType=VARCHAR},
+      </if>
+      <if test="contactMobile != null" >
+        #{contactMobile,jdbcType=VARCHAR},
+      </if>
+      <if test="contactIdNo != null" >
+        #{contactIdNo,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null" >
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.ruru.plastic.user.model.BlueCertExample" resultType="java.lang.Integer" >
+    select count(*) from blue_cert
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map" >
+    update blue_cert
+    <set >
+      <if test="record.id != null" >
+        id = #{record.id,jdbcType=BIGINT},
+      </if>
+      <if test="record.userId != null" >
+        user_id = #{record.userId,jdbcType=BIGINT},
+      </if>
+      <if test="record.name != null" >
+        `name` = #{record.name,jdbcType=VARCHAR},
+      </if>
+      <if test="record.socialCode != null" >
+        social_code = #{record.socialCode,jdbcType=VARCHAR},
+      </if>
+      <if test="record.licenceAddr != null" >
+        licence_addr = #{record.licenceAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="record.setupTime != null" >
+        setup_time = #{record.setupTime,jdbcType=DATE},
+      </if>
+      <if test="record.licenseImg != null" >
+        license_img = #{record.licenseImg,jdbcType=VARCHAR},
+      </if>
+      <if test="record.authorityImg != null" >
+        authority_img = #{record.authorityImg,jdbcType=VARCHAR},
+      </if>
+      <if test="record.status != null" >
+        `status` = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.legalPerson != null" >
+        legal_person = #{record.legalPerson,jdbcType=VARCHAR},
+      </if>
+      <if test="record.contactName != null" >
+        contact_name = #{record.contactName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.contactMobile != null" >
+        contact_mobile = #{record.contactMobile,jdbcType=VARCHAR},
+      </if>
+      <if test="record.contactIdNo != null" >
+        contact_id_no = #{record.contactIdNo,jdbcType=VARCHAR},
+      </if>
+      <if test="record.createTime != null" >
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null" >
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map" >
+    update blue_cert
+    set id = #{record.id,jdbcType=BIGINT},
+      user_id = #{record.userId,jdbcType=BIGINT},
+      `name` = #{record.name,jdbcType=VARCHAR},
+      social_code = #{record.socialCode,jdbcType=VARCHAR},
+      licence_addr = #{record.licenceAddr,jdbcType=VARCHAR},
+      setup_time = #{record.setupTime,jdbcType=DATE},
+      license_img = #{record.licenseImg,jdbcType=VARCHAR},
+      authority_img = #{record.authorityImg,jdbcType=VARCHAR},
+      `status` = #{record.status,jdbcType=INTEGER},
+      legal_person = #{record.legalPerson,jdbcType=VARCHAR},
+      contact_name = #{record.contactName,jdbcType=VARCHAR},
+      contact_mobile = #{record.contactMobile,jdbcType=VARCHAR},
+      contact_id_no = #{record.contactIdNo,jdbcType=VARCHAR},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.ruru.plastic.user.model.BlueCert" >
+    update blue_cert
+    <set >
+      <if test="userId != null" >
+        user_id = #{userId,jdbcType=BIGINT},
+      </if>
+      <if test="name != null" >
+        `name` = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="socialCode != null" >
+        social_code = #{socialCode,jdbcType=VARCHAR},
+      </if>
+      <if test="licenceAddr != null" >
+        licence_addr = #{licenceAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="setupTime != null" >
+        setup_time = #{setupTime,jdbcType=DATE},
+      </if>
+      <if test="licenseImg != null" >
+        license_img = #{licenseImg,jdbcType=VARCHAR},
+      </if>
+      <if test="authorityImg != null" >
+        authority_img = #{authorityImg,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null" >
+        `status` = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="legalPerson != null" >
+        legal_person = #{legalPerson,jdbcType=VARCHAR},
+      </if>
+      <if test="contactName != null" >
+        contact_name = #{contactName,jdbcType=VARCHAR},
+      </if>
+      <if test="contactMobile != null" >
+        contact_mobile = #{contactMobile,jdbcType=VARCHAR},
+      </if>
+      <if test="contactIdNo != null" >
+        contact_id_no = #{contactIdNo,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null" >
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.ruru.plastic.user.model.BlueCert" >
+    update blue_cert
+    set user_id = #{userId,jdbcType=BIGINT},
+      `name` = #{name,jdbcType=VARCHAR},
+      social_code = #{socialCode,jdbcType=VARCHAR},
+      licence_addr = #{licenceAddr,jdbcType=VARCHAR},
+      setup_time = #{setupTime,jdbcType=DATE},
+      license_img = #{licenseImg,jdbcType=VARCHAR},
+      authority_img = #{authorityImg,jdbcType=VARCHAR},
+      `status` = #{status,jdbcType=INTEGER},
+      legal_person = #{legalPerson,jdbcType=VARCHAR},
+      contact_name = #{contactName,jdbcType=VARCHAR},
+      contact_mobile = #{contactMobile,jdbcType=VARCHAR},
+      contact_id_no = #{contactIdNo,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <select id="selectOneByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.BlueCertExample" >
+    <!--
+      WARNING - @mbg.generated
+      This element is automatically generated by MyBatis Generator, do not modify.
+      @project https://github.com/itfsw/mybatis-generator-plugin
+    -->
+    select
+    <include refid="Base_Column_List" />
+    from blue_cert
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+    limit 1
+  </select>
+</mapper>

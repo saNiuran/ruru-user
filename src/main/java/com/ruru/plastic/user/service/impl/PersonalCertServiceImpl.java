@@ -9,43 +9,26 @@ import com.ruru.plastic.user.enume.CertStatusEnum;
 import com.ruru.plastic.user.model.PersonalCert;
 import com.ruru.plastic.user.model.PersonalCertExample;
 import com.ruru.plastic.user.request.PersonalCertRequest;
-import com.ruru.plastic.user.response.PersonalCertResponse;
 import com.ruru.plastic.user.service.PersonalCertService;
-import com.ruru.plastic.user.service.UserService;
 import com.ruru.plastic.user.utils.NullUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 @Service
 public class PersonalCertServiceImpl implements PersonalCertService {
 
     @Autowired
     private PersonalCertMapper personalCertMapper;
-    @Autowired
-    private UserService userService;
 
     @Override
     public PersonalCert getPersonalCertById(Long id){
         return personalCertMapper.selectByPrimaryKey(id);
     }
 
-    @Override
-    public PersonalCertResponse getPersonalCertResponseById(Long id){
-        PersonalCert personalCertByUserId = getPersonalCertById(id);
-        if(personalCertByUserId==null){
-            return null;
-        }
-        PersonalCertResponse response = new PersonalCertResponse();
-        BeanUtils.copyProperties(personalCertByUserId,response);
-        response.setUser(userService.getUserById(personalCertByUserId.getUserId()));
-        return response;
-    }
 
     @Override
     public PersonalCert getPersonalCertByUserId(Long userId){
@@ -153,20 +136,5 @@ public class PersonalCertServiceImpl implements PersonalCertService {
         PageHelper.startPage(request.getPage(), request.getSize());
 
         return new PageInfo<>(personalCertMapper.selectByExample(example));
-    }
-
-    @Override
-    public PageInfo<PersonalCertResponse> filterPersonalCertResponse(PersonalCertRequest request){
-        PageInfo<PersonalCert> pageInfo = filterPersonalCert(request);
-        PageInfo<PersonalCertResponse> responsePageInfo = new PageInfo<>();
-        BeanUtils.copyProperties(pageInfo,responsePageInfo);
-
-        List<PersonalCertResponse> responseList = new ArrayList<>();
-
-        for(PersonalCert personalCert: pageInfo.getList()){
-            responseList.add(getPersonalCertResponseById(personalCert.getId()));
-        }
-        responsePageInfo.setList(responseList);
-        return responsePageInfo;
     }
 }

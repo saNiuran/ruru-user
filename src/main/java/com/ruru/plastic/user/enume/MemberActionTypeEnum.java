@@ -1,7 +1,7 @@
 package com.ruru.plastic.user.enume;
 
 public enum MemberActionTypeEnum {
-    创建(0), 展期(1), 过期(2), 个人认证赠送(3), 企业认证赠送(4);
+    创建(0), 展期(1), 过期(2), 个人认证赠送(3), 企业认证赠送(4),蓝V认证赠送(5);
     private final Integer value;
 
     MemberActionTypeEnum(Integer value) {

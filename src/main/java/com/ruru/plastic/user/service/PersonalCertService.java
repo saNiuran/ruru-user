@@ -9,8 +9,6 @@ import com.ruru.plastic.user.response.PersonalCertResponse;
 public interface PersonalCertService {
     PersonalCert getPersonalCertById(Long id);
 
-    PersonalCertResponse getPersonalCertResponseById(Long id);
-
     PersonalCert getPersonalCertByUserId(Long userId);
 
     Msg<PersonalCert> createPersonalCert(PersonalCert personalCert);
@@ -21,5 +19,4 @@ public interface PersonalCertService {
 
     PageInfo<PersonalCert> filterPersonalCert(PersonalCertRequest request);
 
-    PageInfo<PersonalCertResponse> filterPersonalCertResponse(PersonalCertRequest request);
 }
