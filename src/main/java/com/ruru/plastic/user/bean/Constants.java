@@ -20,6 +20,7 @@ public class Constants {
     public final static String SMS_CODE_THIRD_PARTY_BIND = "smsCodeBind";
 
     public final static String SMS_CODE_CHANGE_MOBILE = "smsCodeChangeMobile";
+    public final static String SINGLE_PRODUCT_EXPERT = "SINGLE_PRODUCT_EXPERT";
 
     public static final Pattern CHINA_MOBILE_PATTERN = Pattern.compile("^((13[0-9])|(14[0-1,4-9])|(15[0-3,5-9])|(16[2,5-7])|(17[0-8])|(18[0-9])|(19[0-3,5-9]))\\d{8}$");
 

@@ -4,9 +4,10 @@ import com.github.pagehelper.PageInfo;
 import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.bean.MembershipOrder;
 import com.ruru.plastic.user.bean.Msg;
+import com.ruru.plastic.user.bean.SystemConfig;
 import com.ruru.plastic.user.enume.MemberActionTypeEnum;
 import com.ruru.plastic.user.enume.UserMemberLevelEnum;
-import com.ruru.plastic.user.feign.ChannelFeignService;
+import com.ruru.plastic.user.feign.ConfigFeignService;
 import com.ruru.plastic.user.model.Member;
 import com.ruru.plastic.user.model.MemberLog;
 import com.ruru.plastic.user.model.User;
@@ -40,6 +41,8 @@ public class MemberController {
     private MemberLogService memberLogService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private ConfigFeignService configFeignService;
 
     @LoginRequired
     @PostMapping("/info")
@@ -105,16 +108,33 @@ public class MemberController {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
 
+        boolean promote= false;
+        DataResponse<SystemConfig> dataResponse = configFeignService.getSystemConfigByName(new SystemConfig() {{
+            setName("member_pay_promote_one_year");
+        }});
+        if(dataResponse.getRetCode()==0 && dataResponse.getData().getValue().equals("1")){
+            promote = true;
+        }
+
         Member validMemberByUserId = memberService.getValidMemberByUserId(membershipOrder.getUserId());
         Msg<Member> msg;
         if(validMemberByUserId==null){
+            boolean finalPromote = promote;
             msg = memberService.createMember(new Member() {{
                 setUserId(membershipOrder.getUserId());
                 setBeginTime(new Date());
-                setOverTime(DateUtil.offsiteDay(new Date(), membershipOrder.getDay()));
+                if(membershipOrder.getDay()==365 && finalPromote){
+                    setOverTime(DateUtil.offsiteDay(new Date(), membershipOrder.getDay()+365));
+                }else{
+                    setOverTime(DateUtil.offsiteDay(new Date(), membershipOrder.getDay()));
+                }
             }});
         }else{
-            validMemberByUserId.setOverTime(DateUtil.offsiteDay(validMemberByUserId.getOverTime(),membershipOrder.getDay()));
+            if(membershipOrder.getDay()==365 && promote) {
+                validMemberByUserId.setOverTime(DateUtil.offsiteDay(validMemberByUserId.getOverTime(), membershipOrder.getDay()+365));
+            }else{
+                validMemberByUserId.setOverTime(DateUtil.offsiteDay(validMemberByUserId.getOverTime(), membershipOrder.getDay()));
+            }
             msg = memberService.updateMember(validMemberByUserId);
         }
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){

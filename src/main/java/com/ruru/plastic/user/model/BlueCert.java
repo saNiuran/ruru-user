@@ -7,7 +7,9 @@ public class BlueCert {
 
     private Long userId;
 
-    private String name;
+    private String blueName;
+
+    private String companyName;
 
     private String socialCode;
 
@@ -49,12 +51,20 @@ public class BlueCert {
         this.userId = userId;
     }
 
-    public String getName() {
-        return name;
+    public String getBlueName() {
+        return blueName;
     }
 
-    public void setName(String name) {
-        this.name = name == null ? null : name.trim();
+    public void setBlueName(String blueName) {
+        this.blueName = blueName == null ? null : blueName.trim();
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName == null ? null : companyName.trim();
     }
 
     public String getSocialCode() {

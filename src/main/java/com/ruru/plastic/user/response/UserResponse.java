@@ -1,14 +1,12 @@
 package com.ruru.plastic.user.response;
 
-import com.ruru.plastic.user.model.Company;
-import com.ruru.plastic.user.model.Member;
-import com.ruru.plastic.user.model.User;
-import com.ruru.plastic.user.model.UserAccount;
+import com.ruru.plastic.user.model.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 @ToString
@@ -21,4 +19,5 @@ public class UserResponse extends User implements Serializable {
     private Member member;
     private UserAccount userAccount;
     private Company company;
+    private List<UserPropertyResponse> properties;
 }

@@ -8,15 +8,14 @@ import com.ruru.plastic.user.enume.*;
 import com.ruru.plastic.user.model.*;
 import com.ruru.plastic.user.net.AdminRequired;
 import com.ruru.plastic.user.net.CurrentAdminUser;
-import com.ruru.plastic.user.request.CorporateCertRequest;
-import com.ruru.plastic.user.request.MemberLogRequest;
-import com.ruru.plastic.user.request.UserCorporateCertMatchRequest;
+import com.ruru.plastic.user.request.*;
 import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.response.UserCorporateCertMatchResponse;
 import com.ruru.plastic.user.service.*;
 import com.ruru.plastic.user.task.CertTask;
 import com.xiaoleilu.hutool.date.DateUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,8 +43,13 @@ public class AdminCorporateCertController {
     private MemberService memberService;
     @Autowired
     private MemberLogService memberLogService;
+    @Autowired
+    private PersonalCertService personalCertService;
+    @Autowired
+    private BlueCertService blueCertService;
     @Value("${cert.corporate.free.day}")
     private Integer freeDays;
+
 
     @AdminRequired
     @PostMapping("/info")
@@ -106,7 +110,7 @@ public class AdminCorporateCertController {
 
         Msg<User> userMsg = userService.updateUser(new User(){{
             setId(userCorporateCertMatchById.getUserId());
-            setCertLevel(UserCertLevelEnum.企业认证.getValue());
+            setCertLevel(getMaxCertLevel(userCorporateCertMatchById.getUserId()));
         }});
         if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
             return DataResponse.error(userMsg.getErrorMsg());
@@ -217,7 +221,7 @@ public class AdminCorporateCertController {
 
         //如果原来认证成功，回退到个人认证;
         if(fromOk){
-            userById.setCertLevel(UserCertLevelEnum.个人认证.getValue());
+            userById.setCertLevel(getMaxCertLevel(userById.getId()));
             userService.updateUser(userById);
         }
 
@@ -253,7 +257,59 @@ public class AdminCorporateCertController {
     @AdminRequired
     @PostMapping("/match/filter")
     public DataResponse<PageInfo<UserCorporateCertMatchResponse>> filterCorporateCert(@RequestBody UserCorporateCertMatchRequest request){
-        return DataResponse.success(userCorporateCertMatchService.filterUserCorporateCertMatchResponse(request));
+        PageInfo<UserCorporateCertMatch> pageInfo = userCorporateCertMatchService.filterUserCorporateCertMatch(request);
+        PageInfo<UserCorporateCertMatchResponse> responsePageInfo = new PageInfo<>();
+        BeanUtils.copyProperties(pageInfo,responsePageInfo);
+        List<UserCorporateCertMatchResponse> responseList = new ArrayList<>();
+
+        for(UserCorporateCertMatch match: pageInfo.getList()){
+            responseList.add(getUserCorporateCertMatchResponseById(match.getId()));
+        }
+        responsePageInfo.setList(responseList);
+        return DataResponse.success(responsePageInfo);
+    }
+
+
+    public UserCorporateCertMatchResponse getUserCorporateCertMatchResponseById(Long id){
+        UserCorporateCertMatch userCorporateCertMatchById = userCorporateCertMatchService.getUserCorporateCertMatchById(id);
+        if(userCorporateCertMatchById==null){
+            return null;
+        }
+        UserCorporateCertMatchResponse response = new UserCorporateCertMatchResponse();
+        BeanUtils.copyProperties(userCorporateCertMatchById,response);
+        response.setCorporateCert(corporateCertService.getCorporateCertById(userCorporateCertMatchById.getCorporateCertId()));
+        response.setUser(userService.getUserById(userCorporateCertMatchById.getUserId()));
+        return response;
+    }
+
+    private int getMaxCertLevel(Long userId){
+        List<BlueCert> list = blueCertService.queryBlueCert(new BlueCertRequest() {{
+            setUserId(userId);
+            setStatus(CertStatusEnum.审核通过.getValue());
+        }});
+        if(list.size()>0){
+            return UserCertLevelEnum.蓝V认证.getValue();
+        }
+
+        UserCorporateCertMatch matchByUserId = userCorporateCertMatchService.getUserCorporateCertMatchByUserId(userId);
+        if(matchByUserId!=null){
+            List<CorporateCert> list1 = corporateCertService.queryCorporateCert(new CorporateCertRequest() {{
+                setId(matchByUserId.getCorporateCertId());
+            }});
+            if(list1.size()>0){
+                return UserCertLevelEnum.企业认证.getValue();
+            }
+        }
+
+        List<PersonalCert> list2 = personalCertService.queryPersonalCert(new PersonalCertRequest() {{
+            setUserId(userId);
+            setStatus(CertStatusEnum.审核通过.getValue());
+        }});
+        if(list2.size()>0){
+            return UserCertLevelEnum.个人认证.getValue();
+        }
+
+        return UserCertLevelEnum.未认证.getValue();
     }
 
 }

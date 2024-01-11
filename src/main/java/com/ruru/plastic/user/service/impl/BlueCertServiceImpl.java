@@ -46,7 +46,7 @@ public class BlueCertServiceImpl implements BlueCertService {
 
     @Override
     public Msg<BlueCert> createBlueCert(BlueCert blueCert){
-        if(blueCert==null || StringUtils.isEmpty(blueCert.getSocialCode())
+        if(blueCert==null || StringUtils.isEmpty(blueCert.getBlueName()) || StringUtils.isEmpty(blueCert.getSocialCode())
                 || StringUtils.isEmpty(blueCert.getLicenseImg()) || StringUtils.isEmpty(blueCert.getContactName())
                 || StringUtils.isEmpty(blueCert.getContactIdNo())){
             return Msg.error(Constants.ERROR_PARAMETER);
@@ -58,6 +58,14 @@ public class BlueCertServiceImpl implements BlueCertService {
         }});
 
         if(list.size()>0){
+            return Msg.error(Constants.ERROR_DUPLICATE_INFO);
+        }
+
+        List<BlueCert> list1 = queryBlueCert(new BlueCertRequest() {{
+            setBlueName(blueCert.getBlueName());
+        }});
+
+        if(list1.size()>0){
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
         }
 
@@ -94,6 +102,14 @@ public class BlueCertServiceImpl implements BlueCertService {
         }});
 
         if(list.stream().anyMatch(v->!v.getId().equals(blueCertById.getId()))){
+            return Msg.error(Constants.ERROR_DUPLICATE_INFO);
+        }
+
+        List<BlueCert> list1 = queryBlueCert(new BlueCertRequest() {{
+            setBlueName(blueCertById.getBlueName());
+        }});
+
+        if(list1.stream().anyMatch(v->!v.getId().equals(blueCertById.getId()))){
             return Msg.error(Constants.ERROR_DUPLICATE_INFO);
         }
 
@@ -135,8 +151,11 @@ public class BlueCertServiceImpl implements BlueCertService {
         if(request.getUserId()!=null){
             criteria.andUserIdEqualTo(request.getUserId());
         }
-        if(StringUtils.isNotEmpty(request.getName())){
-            criteria.andNameEqualTo(request.getName());
+        if(StringUtils.isNotEmpty(request.getBlueName())){
+            criteria.andBlueNameEqualTo(request.getBlueName());
+        }
+        if(StringUtils.isNotEmpty(request.getCompanyName())){
+            criteria.andCompanyNameEqualTo(request.getCompanyName());
         }
         if(StringUtils.isNotEmpty(request.getSocialCode())){
             criteria.andSocialCodeEqualTo(request.getSocialCode());
@@ -149,6 +168,12 @@ public class BlueCertServiceImpl implements BlueCertService {
         }
         if(request.getStatus()!=null){
             criteria.andStatusEqualTo(request.getStatus());
+        }else if(request.getStatusList()!=null){
+            if(request.getStatusList().size()>0){
+                criteria.andStatusIn(request.getStatusList());
+            }else{
+                criteria.andStatusIsNull();
+            }
         }
         if(StringUtils.isNotEmpty(request.getLegalPerson())){
             criteria.andLegalPersonEqualTo(request.getLegalPerson());

@@ -7,6 +7,7 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @Data
 @ToString
@@ -17,4 +18,6 @@ public class BlueCertRequest extends BlueCert implements Serializable {
     private String orderClause;
     private Date startTime;
     private Date endTime;
+
+    private List<Integer> statusList;
 }

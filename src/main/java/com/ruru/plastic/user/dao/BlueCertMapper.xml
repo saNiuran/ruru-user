@@ -4,7 +4,8 @@
   <resultMap id="BaseResultMap" type="com.ruru.plastic.user.model.BlueCert" >
     <id column="id" property="id" jdbcType="BIGINT" />
     <result column="user_id" property="userId" jdbcType="BIGINT" />
-    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="blue_name" property="blueName" jdbcType="VARCHAR" />
+    <result column="company_name" property="companyName" jdbcType="VARCHAR" />
     <result column="social_code" property="socialCode" jdbcType="VARCHAR" />
     <result column="licence_addr" property="licenceAddr" jdbcType="VARCHAR" />
     <result column="setup_time" property="setupTime" jdbcType="DATE" />
@@ -77,9 +78,9 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, user_id, `name`, social_code, licence_addr, setup_time, license_img, authority_img, 
-    `status`, legal_person, contact_name, contact_mobile, contact_id_no, create_time, 
-    update_time
+    id, user_id, blue_name, company_name, social_code, licence_addr, setup_time, license_img, 
+    authority_img, `status`, legal_person, contact_name, contact_mobile, contact_id_no, 
+    create_time, update_time
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.BlueCertExample" >
     select
@@ -115,16 +116,18 @@
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into blue_cert (user_id, `name`, social_code, 
-      licence_addr, setup_time, license_img, 
-      authority_img, `status`, legal_person, 
-      contact_name, contact_mobile, contact_id_no, 
-      create_time, update_time)
-    values (#{userId,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR}, #{socialCode,jdbcType=VARCHAR}, 
-      #{licenceAddr,jdbcType=VARCHAR}, #{setupTime,jdbcType=DATE}, #{licenseImg,jdbcType=VARCHAR}, 
-      #{authorityImg,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, #{legalPerson,jdbcType=VARCHAR}, 
-      #{contactName,jdbcType=VARCHAR}, #{contactMobile,jdbcType=VARCHAR}, #{contactIdNo,jdbcType=VARCHAR}, 
-      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+    insert into blue_cert (user_id, blue_name, company_name, 
+      social_code, licence_addr, setup_time, 
+      license_img, authority_img, `status`, 
+      legal_person, contact_name, contact_mobile, 
+      contact_id_no, create_time, update_time
+      )
+    values (#{userId,jdbcType=BIGINT}, #{blueName,jdbcType=VARCHAR}, #{companyName,jdbcType=VARCHAR}, 
+      #{socialCode,jdbcType=VARCHAR}, #{licenceAddr,jdbcType=VARCHAR}, #{setupTime,jdbcType=DATE}, 
+      #{licenseImg,jdbcType=VARCHAR}, #{authorityImg,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{legalPerson,jdbcType=VARCHAR}, #{contactName,jdbcType=VARCHAR}, #{contactMobile,jdbcType=VARCHAR}, 
+      #{contactIdNo,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
+      )
   </insert>
   <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.BlueCert" >
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
@@ -135,8 +138,11 @@
       <if test="userId != null" >
         user_id,
       </if>
-      <if test="name != null" >
-        `name`,
+      <if test="blueName != null" >
+        blue_name,
+      </if>
+      <if test="companyName != null" >
+        company_name,
       </if>
       <if test="socialCode != null" >
         social_code,
@@ -179,8 +185,11 @@
       <if test="userId != null" >
         #{userId,jdbcType=BIGINT},
       </if>
-      <if test="name != null" >
-        #{name,jdbcType=VARCHAR},
+      <if test="blueName != null" >
+        #{blueName,jdbcType=VARCHAR},
+      </if>
+      <if test="companyName != null" >
+        #{companyName,jdbcType=VARCHAR},
       </if>
       <if test="socialCode != null" >
         #{socialCode,jdbcType=VARCHAR},
@@ -235,8 +244,11 @@
       <if test="record.userId != null" >
         user_id = #{record.userId,jdbcType=BIGINT},
       </if>
-      <if test="record.name != null" >
-        `name` = #{record.name,jdbcType=VARCHAR},
+      <if test="record.blueName != null" >
+        blue_name = #{record.blueName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.companyName != null" >
+        company_name = #{record.companyName,jdbcType=VARCHAR},
       </if>
       <if test="record.socialCode != null" >
         social_code = #{record.socialCode,jdbcType=VARCHAR},
@@ -283,7 +295,8 @@
     update blue_cert
     set id = #{record.id,jdbcType=BIGINT},
       user_id = #{record.userId,jdbcType=BIGINT},
-      `name` = #{record.name,jdbcType=VARCHAR},
+      blue_name = #{record.blueName,jdbcType=VARCHAR},
+      company_name = #{record.companyName,jdbcType=VARCHAR},
       social_code = #{record.socialCode,jdbcType=VARCHAR},
       licence_addr = #{record.licenceAddr,jdbcType=VARCHAR},
       setup_time = #{record.setupTime,jdbcType=DATE},
@@ -306,8 +319,11 @@
       <if test="userId != null" >
         user_id = #{userId,jdbcType=BIGINT},
       </if>
-      <if test="name != null" >
-        `name` = #{name,jdbcType=VARCHAR},
+      <if test="blueName != null" >
+        blue_name = #{blueName,jdbcType=VARCHAR},
+      </if>
+      <if test="companyName != null" >
+        company_name = #{companyName,jdbcType=VARCHAR},
       </if>
       <if test="socialCode != null" >
         social_code = #{socialCode,jdbcType=VARCHAR},
@@ -351,7 +367,8 @@
   <update id="updateByPrimaryKey" parameterType="com.ruru.plastic.user.model.BlueCert" >
     update blue_cert
     set user_id = #{userId,jdbcType=BIGINT},
-      `name` = #{name,jdbcType=VARCHAR},
+      blue_name = #{blueName,jdbcType=VARCHAR},
+      company_name = #{companyName,jdbcType=VARCHAR},
       social_code = #{socialCode,jdbcType=VARCHAR},
       licence_addr = #{licenceAddr,jdbcType=VARCHAR},
       setup_time = #{setupTime,jdbcType=DATE},

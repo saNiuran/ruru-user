@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class PersonalCertServiceImpl implements PersonalCertService {
@@ -36,6 +37,23 @@ public class PersonalCertServiceImpl implements PersonalCertService {
         example.createCriteria().andUserIdEqualTo(userId);
         return personalCertMapper.selectOneByExample(example);
     }
+
+    @Override
+    public List<PersonalCert> queryPersonalCert(PersonalCertRequest request){
+        PersonalCertExample example = new PersonalCertExample();
+        PersonalCertExample.Criteria criteria = example.createCriteria();
+
+        queryPersonalCert(request, criteria);
+
+        if (StringUtils.isNotEmpty(request.getOrderClause())) {
+            example.setOrderByClause(request.getOrderClause());
+        } else {
+            example.setOrderByClause("update_time desc");
+        }
+
+        return personalCertMapper.selectByExample(example);
+    }
+
 
     @Override
     public Msg<PersonalCert> createPersonalCert(PersonalCert personalCert){
@@ -105,6 +123,19 @@ public class PersonalCertServiceImpl implements PersonalCertService {
         PersonalCertExample example = new PersonalCertExample();
         PersonalCertExample.Criteria criteria = example.createCriteria();
 
+        queryPersonalCert(request, criteria);
+
+        if (StringUtils.isNotEmpty(request.getOrderClause())) {
+            example.setOrderByClause(request.getOrderClause());
+        } else {
+            example.setOrderByClause("update_time desc");
+        }
+        PageHelper.startPage(request.getPage(), request.getSize());
+
+        return new PageInfo<>(personalCertMapper.selectByExample(example));
+    }
+
+    private static void queryPersonalCert(PersonalCertRequest request, PersonalCertExample.Criteria criteria) {
         if(request.getId()!=null){
             criteria.andIdEqualTo(request.getId());
         }
@@ -119,6 +150,12 @@ public class PersonalCertServiceImpl implements PersonalCertService {
         }
         if(request.getStatus()!=null){
             criteria.andStatusEqualTo(request.getStatus());
+        }else if(request.getStatusList()!=null){
+            if(request.getStatusList().size()>0){
+                criteria.andStatusIn(request.getStatusList());
+            }else{
+                criteria.andStatusIsNull();
+            }
         }
 
         if (request.getStartTime() != null) {
@@ -127,14 +164,5 @@ public class PersonalCertServiceImpl implements PersonalCertService {
         if (request.getEndTime() != null) {
             criteria.andUpdateTimeLessThanOrEqualTo(request.getEndTime());
         }
-
-        if (StringUtils.isNotEmpty(request.getOrderClause())) {
-            example.setOrderByClause(request.getOrderClause());
-        } else {
-            example.setOrderByClause("update_time desc");
-        }
-        PageHelper.startPage(request.getPage(), request.getSize());
-
-        return new PageInfo<>(personalCertMapper.selectByExample(example));
     }
 }

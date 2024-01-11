@@ -8,7 +8,6 @@ import com.ruru.plastic.user.dao.UserCorporateCertMatchMapper;
 import com.ruru.plastic.user.model.UserCorporateCertMatch;
 import com.ruru.plastic.user.model.UserCorporateCertMatchExample;
 import com.ruru.plastic.user.request.UserCorporateCertMatchRequest;
-import com.ruru.plastic.user.response.UserCorporateCertMatchResponse;
 import com.ruru.plastic.user.service.CorporateCertService;
 import com.ruru.plastic.user.service.UserCorporateCertMatchService;
 import com.ruru.plastic.user.service.UserService;
@@ -18,7 +17,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -26,10 +24,6 @@ import java.util.List;
 public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatchService {
     @Autowired
     private UserCorporateCertMatchMapper userCorporateCertMatchMapper;
-    @Autowired
-    private CorporateCertService corporateCertService;
-    @Autowired
-    private UserService userService;
 
     @Override
     public UserCorporateCertMatch getUserCorporateCertMatchById(Long id){
@@ -37,23 +31,25 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
     }
 
     @Override
-    public UserCorporateCertMatchResponse getUserCorporateCertMatchResponseById(Long id){
-        UserCorporateCertMatch userCorporateCertMatchById = getUserCorporateCertMatchById(id);
-        if(userCorporateCertMatchById==null){
-            return null;
-        }
-        UserCorporateCertMatchResponse response = new UserCorporateCertMatchResponse();
-        BeanUtils.copyProperties(userCorporateCertMatchById,response);
-        response.setCorporateCert(corporateCertService.getCorporateCertById(userCorporateCertMatchById.getCorporateCertId()));
-        response.setUser(userService.getUserById(userCorporateCertMatchById.getUserId()));
-        return response;
-    }
-
-    @Override
     public UserCorporateCertMatch getUserCorporateCertMatchByUserId(Long userId){
         UserCorporateCertMatchExample example = new UserCorporateCertMatchExample();
         example.createCriteria().andUserIdEqualTo(userId);
         return userCorporateCertMatchMapper.selectOneByExample(example);
+    }
+
+    @Override
+    public List<UserCorporateCertMatch> queryUserCorporateCertMatch(UserCorporateCertMatchRequest request){
+        UserCorporateCertMatchExample example = new UserCorporateCertMatchExample();
+        UserCorporateCertMatchExample.Criteria criteria = example.createCriteria();
+
+        queryUserCorporateCertMatch(request, criteria);
+
+        if(StringUtils.isNotEmpty(request.getOrderClause())){
+            example.setOrderByClause(request.getOrderClause());
+        }else{
+            example.setOrderByClause("update_time desc");
+        }
+        return userCorporateCertMatchMapper.selectByExample(example);
     }
 
     @Override
@@ -118,6 +114,19 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
         UserCorporateCertMatchExample example = new UserCorporateCertMatchExample();
         UserCorporateCertMatchExample.Criteria criteria = example.createCriteria();
 
+        queryUserCorporateCertMatch(request, criteria);
+
+        if(StringUtils.isNotEmpty(request.getOrderClause())){
+            example.setOrderByClause(request.getOrderClause());
+        }else{
+            example.setOrderByClause("update_time desc");
+        }
+
+        PageHelper.startPage(request.getPage(),request.getSize());
+        return new PageInfo<>(userCorporateCertMatchMapper.selectByExample(example));
+    }
+
+    private static void queryUserCorporateCertMatch(UserCorporateCertMatchRequest request, UserCorporateCertMatchExample.Criteria criteria) {
         if(request.getId()!=null){
             criteria.andIdEqualTo(request.getId());
         }
@@ -134,29 +143,7 @@ public class UserCorporateCertMatchServiceImpl implements UserCorporateCertMatch
         if(request.getEndTime()!=null){
             criteria.andCreateTimeLessThanOrEqualTo(request.getEndTime());
         }
-
-        if(StringUtils.isNotEmpty(request.getOrderClause())){
-            example.setOrderByClause(request.getOrderClause());
-        }else{
-            example.setOrderByClause("update_time desc");
-        }
-
-        PageHelper.startPage(request.getPage(),request.getSize());
-        return new PageInfo<>(userCorporateCertMatchMapper.selectByExample(example));
     }
 
-    @Override
-    public PageInfo<UserCorporateCertMatchResponse> filterUserCorporateCertMatchResponse(UserCorporateCertMatchRequest request){
-        PageInfo<UserCorporateCertMatch> pageInfo = filterUserCorporateCertMatch(request);
-        PageInfo<UserCorporateCertMatchResponse> responsePageInfo = new PageInfo<>();
-        BeanUtils.copyProperties(pageInfo,responsePageInfo);
-        List<UserCorporateCertMatchResponse> responseList = new ArrayList<>();
 
-        for(UserCorporateCertMatch match: pageInfo.getList()){
-            responseList.add(getUserCorporateCertMatchResponseById(match.getId()));
-        }
-        responsePageInfo.setList(responseList);
-        return responsePageInfo;
-
-    }
 }

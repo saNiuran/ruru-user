@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class CorporateCertServiceImpl implements CorporateCertService {
@@ -34,6 +35,22 @@ public class CorporateCertServiceImpl implements CorporateCertService {
         CorporateCertExample example = new CorporateCertExample();
         example.createCriteria().andSocialCodeEqualTo(socialCode);
         return corporateCertMapper.selectOneByExample(example);
+    }
+
+    @Override
+    public List<CorporateCert> queryCorporateCert(CorporateCertRequest request){
+        CorporateCertExample example = new CorporateCertExample();
+        CorporateCertExample.Criteria criteria = example.createCriteria();
+
+        queryCorporateCert(request, criteria);
+
+        if (StringUtils.isNotEmpty(request.getOrderClause())) {
+            example.setOrderByClause(request.getOrderClause());
+        } else {
+            example.setOrderByClause("update_time desc");
+        }
+
+        return corporateCertMapper.selectByExample(example);
     }
 
     @Override
@@ -104,6 +121,19 @@ public class CorporateCertServiceImpl implements CorporateCertService {
         CorporateCertExample example = new CorporateCertExample();
         CorporateCertExample.Criteria criteria = example.createCriteria();
 
+        queryCorporateCert(request, criteria);
+
+        if (StringUtils.isNotEmpty(request.getOrderClause())) {
+            example.setOrderByClause(request.getOrderClause());
+        } else {
+            example.setOrderByClause("update_time desc");
+        }
+        PageHelper.startPage(request.getPage(), request.getSize());
+
+        return new PageInfo<>(corporateCertMapper.selectByExample(example));
+    }
+
+    private static void queryCorporateCert(CorporateCertRequest request, CorporateCertExample.Criteria criteria) {
         if(request.getId()!=null){
             criteria.andIdEqualTo(request.getId());
         }
@@ -115,6 +145,12 @@ public class CorporateCertServiceImpl implements CorporateCertService {
         }
         if(request.getStatus()!=null){
             criteria.andStatusEqualTo(request.getStatus());
+        }else if(request.getStatusList()!=null){
+            if(request.getStatusList().size()>0){
+                criteria.andStatusIn(request.getStatusList());
+            }else{
+                criteria.andStatusIsNull();
+            }
         }
 
         if (request.getStartTime() != null) {
@@ -123,15 +159,6 @@ public class CorporateCertServiceImpl implements CorporateCertService {
         if (request.getEndTime() != null) {
             criteria.andUpdateTimeLessThanOrEqualTo(request.getEndTime());
         }
-
-        if (StringUtils.isNotEmpty(request.getOrderClause())) {
-            example.setOrderByClause(request.getOrderClause());
-        } else {
-            example.setOrderByClause("update_time desc");
-        }
-        PageHelper.startPage(request.getPage(), request.getSize());
-
-        return new PageInfo<>(corporateCertMapper.selectByExample(example));
     }
 
 }

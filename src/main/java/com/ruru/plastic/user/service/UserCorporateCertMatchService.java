@@ -6,12 +6,14 @@ import com.ruru.plastic.user.model.UserCorporateCertMatch;
 import com.ruru.plastic.user.request.UserCorporateCertMatchRequest;
 import com.ruru.plastic.user.response.UserCorporateCertMatchResponse;
 
+import java.util.List;
+
 public interface UserCorporateCertMatchService {
     UserCorporateCertMatch getUserCorporateCertMatchById(Long id);
 
-    UserCorporateCertMatchResponse getUserCorporateCertMatchResponseById(Long id);
-
     UserCorporateCertMatch getUserCorporateCertMatchByUserId(Long userId);
+
+    List<UserCorporateCertMatch> queryUserCorporateCertMatch(UserCorporateCertMatchRequest request);
 
     Msg<UserCorporateCertMatch> createUserCorporateCertMatch(UserCorporateCertMatch userCorporateCertMatch);
 
@@ -21,5 +23,4 @@ public interface UserCorporateCertMatchService {
 
     PageInfo<UserCorporateCertMatch> filterUserCorporateCertMatch(UserCorporateCertMatchRequest request);
 
-    PageInfo<UserCorporateCertMatchResponse> filterUserCorporateCertMatchResponse(UserCorporateCertMatchRequest request);
 }

@@ -7,11 +7,10 @@ import com.ruru.plastic.user.model.*;
 import com.ruru.plastic.user.net.CurrentUser;
 import com.ruru.plastic.user.net.LoginRequired;
 import com.ruru.plastic.user.redis.RedisService;
-import com.ruru.plastic.user.request.LogonRequest;
-import com.ruru.plastic.user.request.UserMatchRequest;
-import com.ruru.plastic.user.request.UserRequest;
+import com.ruru.plastic.user.request.*;
 import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.response.UserMatchResponse;
+import com.ruru.plastic.user.response.UserPropertyResponse;
 import com.ruru.plastic.user.response.UserResponse;
 import com.ruru.plastic.user.task.PushTask;
 import com.ruru.plastic.user.task.TokenTask;
@@ -26,6 +25,7 @@ import org.springframework.context.annotation.Description;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -77,6 +77,12 @@ public class UserController {
     private ChannelFeignService channelFeignService;
     @Autowired
     private BoardFeignService boardFeignService;
+    @Autowired
+    private BlueCertService blueCertService;
+    @Autowired
+    private UserPropertyService userPropertyService;
+    @Autowired
+    private PropertyService propertyService;
 
     @LoginRequired
     @PostMapping("/info")
@@ -180,6 +186,28 @@ public class UserController {
         if (userById.getCompanyId() != null) {
             response.setCompany(companyService.getCompanyById(userById.getCompanyId()));
         }
+        List<UserProperty> list = userPropertyService.queryUserProperty(new UserPropertyRequest() {{
+            setStatus(StatusEnum.可用.getValue());
+            setUserId(userId);
+        }});
+
+        List<UserPropertyResponse> responseList = new ArrayList<>();
+        for(UserProperty userProperty: list){
+            responseList.add(getUserPropertyResponseById(userProperty.getId()));
+        }
+
+        response.setProperties(responseList);
+        return response;
+    }
+
+    private UserPropertyResponse getUserPropertyResponseById(Long id) {
+        UserProperty userPropertyById = userPropertyService.getUserPropertyById(id);
+        if(userPropertyById==null){
+            return null;
+        }
+        UserPropertyResponse response = new UserPropertyResponse();
+        BeanUtils.copyProperties(userPropertyById,response);
+        response.setProperty(propertyService.getPropertyById(userPropertyById.getPropertyId()));
         return response;
     }
 
@@ -224,7 +252,6 @@ public class UserController {
             counter.setMessageCounter(messageDataResponse.getData().getMessageCounter());
             counter.setUnreadMessageCounter(messageDataResponse.getData().getUnreadMessageCounter());
         }
-
         DataResponse<Integer> reviewDataResponse = boardFeignService.queryReviewLog(new ReviewLogRequest() {{
             setOperatorId(user.getId());
         }});
@@ -245,6 +272,15 @@ public class UserController {
         UserCorporateCertMatch userCorporateCertMatchByUserId = userCorporateCertMatchService.getUserCorporateCertMatchByUserId(user.getId());
         if (userCorporateCertMatchByUserId != null) {
             pack.setCorporateCert(corporateCertService.getCorporateCertById(userCorporateCertMatchByUserId.getCorporateCertId()));
+        }
+
+        List<BlueCert> list = blueCertService.queryBlueCert(new BlueCertRequest() {{
+            setUserId(user.getId());
+            setStatusList(Arrays.asList(CertStatusEnum.待审核.getValue(),CertStatusEnum.待付款.getValue(),CertStatusEnum.审核通过.getValue(),
+                    CertStatusEnum.审核失败.getValue()));
+        }});
+        if(list.size()>0){
+            pack.setBlueCert(list.get(0));
         }
 
         return DataResponse.success(pack);
@@ -341,11 +377,11 @@ public class UserController {
 
         UserResponse response = new UserResponse();
         BeanUtils.copyProperties(userByMobile, response);
-        response.setToken(tokenTask.createToken(userByMobile.getId(), Integer.parseInt(servletRequest.getHeader("appType")), servletRequest.getHeader("deviceCode"), UserTypeEnum.User.getValue()));
+        response.setToken(tokenTask.createToken(userByMobile.getId(), servletRequest.getIntHeader("appType"), servletRequest.getHeader("deviceCode"), UserTypeEnum.User.getValue()));
         if(userByMobile.getAdminId()!=null && userByMobile.getAdminId()>0){
             AdminUser adminUserById = adminUserService.getAdminUserById(userByMobile.getAdminId());
             if(adminUserById!=null && adminUserById.getStatus().equals(StatusEnum.可用.getValue())) {
-                response.setAdminToken(tokenTask.createToken(userByMobile.getAdminId(), Integer.parseInt(servletRequest.getHeader("appType")), servletRequest.getHeader("deviceCode"), UserTypeEnum.Admin.getValue()));
+                response.setAdminToken(tokenTask.createToken(userByMobile.getAdminId(), servletRequest.getIntHeader("appType"), servletRequest.getHeader("deviceCode"), UserTypeEnum.Admin.getValue()));
             }
         }
         return DataResponse.success(response);

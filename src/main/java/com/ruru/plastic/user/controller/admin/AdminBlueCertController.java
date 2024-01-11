@@ -4,12 +4,16 @@ import com.github.pagehelper.PageInfo;
 import com.ruru.plastic.user.bean.Constants;
 import com.ruru.plastic.user.bean.Msg;
 import com.ruru.plastic.user.bean.PushBody;
+import com.ruru.plastic.user.bean.SystemConfig;
 import com.ruru.plastic.user.enume.*;
+import com.ruru.plastic.user.feign.ConfigFeignService;
 import com.ruru.plastic.user.model.*;
 import com.ruru.plastic.user.net.AdminRequired;
 import com.ruru.plastic.user.net.CurrentAdminUser;
+import com.ruru.plastic.user.request.CorporateCertRequest;
 import com.ruru.plastic.user.request.MemberLogRequest;
 import com.ruru.plastic.user.request.BlueCertRequest;
+import com.ruru.plastic.user.request.PersonalCertRequest;
 import com.ruru.plastic.user.response.BlueCertResponse;
 import com.ruru.plastic.user.response.DataResponse;
 import com.ruru.plastic.user.service.*;
@@ -42,8 +46,16 @@ public class AdminBlueCertController {
     private MemberService memberService;
     @Autowired
     private MemberLogService memberLogService;
+    @Autowired
+    private PersonalCertService personalCertService;
+    @Autowired
+    private CorporateCertService corporateCertService;
+    @Autowired
+    private UserCorporateCertMatchService userCorporateCertMatchService;
     @Value("${cert.blue.free.day}")
     private Integer freeDays;
+    @Autowired
+    private ConfigFeignService configFeignService;
 
     @AdminRequired
     @PostMapping("/info")
@@ -60,7 +72,7 @@ public class AdminBlueCertController {
 
     @AdminRequired
     @PostMapping("/audit/ok")
-    public DataResponse<BlueCert> createBlueCert(@RequestBody BlueCert blueCert, @CurrentAdminUser AdminUser adminUser) {
+    public DataResponse<BlueCertResponse> createBlueCert(@RequestBody BlueCert blueCert, @CurrentAdminUser AdminUser adminUser) {
         if (blueCert == null || blueCert.getId() == null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
@@ -85,7 +97,7 @@ public class AdminBlueCertController {
         }
         Msg<User> userMsg = userService.updateUser(new User() {{
             setId(blueCertById.getUserId());
-            setCertLevel(UserCertLevelEnum.蓝V认证.getValue());
+            setCertLevel(getMaxCertLevel(blueCertById.getUserId()));
         }});
         if (StringUtils.isNotEmpty(userMsg.getErrorMsg())) {
             return DataResponse.error(userMsg.getErrorMsg());
@@ -101,7 +113,6 @@ public class AdminBlueCertController {
             setCertStatus(msg.getData().getStatus());
         }});
 
-
         certTask.createCertMessage(blueCertById, NotifyCodeEnum.蓝V认证_审核通过, adminUser);
         certTask.createPush(new PushBody() {{
             setNotifyCode(NotifyCodeEnum.蓝V认证_审核通过);
@@ -114,47 +125,57 @@ public class AdminBlueCertController {
         }});
 
         //赠送90天VIP会员
-        //检查是不是已经赠送过
-        List<MemberLog> memberLogList = memberLogService.queryMemberLog(new MemberLogRequest() {{
-            setUserId(blueCertById.getUserId());
-            setActionType(MemberActionTypeEnum.蓝V认证赠送.getValue());
+        //检查是不是活动还在继续
+        boolean active = false;
+        DataResponse<SystemConfig> dataResponse = configFeignService.getSystemConfigByName(new SystemConfig() {{
+            setName("blue_v_donate_member_3");
         }});
-
-        if(memberLogList.size()==0){
-
-            Member validMemberByUserId = memberService.getValidMemberByUserId(userById.getId());
-            Msg<Member> memberMsg;
-            if(validMemberByUserId==null){
-                memberMsg = memberService.createMember(new Member() {{
-                    setUserId(blueCertById.getUserId());
-                    setStatus(StatusEnum.可用.getValue());
-                    setBeginTime(new Date());
-                    setOverTime(DateUtil.offsiteDay(new Date(), freeDays));
-                }});
-            }else{
-                validMemberByUserId.setOverTime(DateUtil.offsiteDay(validMemberByUserId.getOverTime(),freeDays));
-                memberMsg = memberService.updateMember(validMemberByUserId);
-            }
-            if(StringUtils.isNotEmpty(memberMsg.getErrorMsg())){
-                return DataResponse.error(memberMsg.getErrorMsg());
-            }
-
-            userById.setMemberLevel(UserMemberLevelEnum.付费用户.getValue());
-            userService.updateUser(userById);
-            memberLogService.createMemberLog(new MemberLog(){{
-                setUserId(blueCertById.getUserId());
-                setActionType(MemberActionTypeEnum.蓝V认证赠送.getValue());
-                setDays(freeDays);
-                setRemark("蓝V认证赠送");
-            }});
+        if(dataResponse.getRetCode()==0 && dataResponse.getData().getValue().equals("1")){
+            active = true;
         }
 
-        return DataResponse.success(msg.getData());
+        if(active) {
+            //检查是不是已经赠送过
+            List<MemberLog> memberLogList = memberLogService.queryMemberLog(new MemberLogRequest() {{
+                setUserId(blueCertById.getUserId());
+                setActionType(MemberActionTypeEnum.蓝V认证赠送.getValue());
+            }});
+
+            if (memberLogList.size() == 0) {
+
+                Member validMemberByUserId = memberService.getValidMemberByUserId(userById.getId());
+                Msg<Member> memberMsg;
+                if (validMemberByUserId == null) {
+                    memberMsg = memberService.createMember(new Member() {{
+                        setUserId(blueCertById.getUserId());
+                        setStatus(StatusEnum.可用.getValue());
+                        setBeginTime(new Date());
+                        setOverTime(DateUtil.offsiteDay(new Date(), freeDays));
+                    }});
+                } else {
+                    validMemberByUserId.setOverTime(DateUtil.offsiteDay(validMemberByUserId.getOverTime(), freeDays));
+                    memberMsg = memberService.updateMember(validMemberByUserId);
+                }
+                if (StringUtils.isNotEmpty(memberMsg.getErrorMsg())) {
+                    return DataResponse.error(memberMsg.getErrorMsg());
+                }
+
+                userById.setMemberLevel(UserMemberLevelEnum.付费用户.getValue());
+                userService.updateUser(userById);
+                memberLogService.createMemberLog(new MemberLog() {{
+                    setUserId(blueCertById.getUserId());
+                    setActionType(MemberActionTypeEnum.蓝V认证赠送.getValue());
+                    setDays(freeDays);
+                    setRemark("蓝V认证赠送");
+                }});
+            }
+        }
+        return DataResponse.success(getBlueCertResponseById(msg.getData().getId()));
     }
 
     @AdminRequired
     @PostMapping("/audit/fail")
-    public DataResponse<BlueCert> updateBlueCert(@RequestBody BlueCert blueCert, @CurrentAdminUser AdminUser adminUser) {
+    public DataResponse<BlueCertResponse> updateBlueCert(@RequestBody BlueCert blueCert, @CurrentAdminUser AdminUser adminUser) {
         if (blueCert == null || blueCert.getId() == null) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
@@ -191,9 +212,9 @@ public class AdminBlueCertController {
 
         certTask.createCertMessage(blueCertById, NotifyCodeEnum.蓝V认证_审核不通过, adminUser);
 
-        //如果原来认证成功，回退到未认证;
+        //如果原来认证成功，回退到最大认证;
         if(fromOk){
-            userById.setCertLevel(UserCertLevelEnum.未认证.getValue());
+            userById.setCertLevel(getMaxCertLevel(blueCertById.getUserId()));
             userService.updateUser(userById);
         }
 
@@ -207,8 +228,10 @@ public class AdminBlueCertController {
             setExtras(extras);
         }});
 
-        return DataResponse.success(msg.getData());
+        return DataResponse.success(getBlueCertResponseById(msg.getData().getId()));
     }
+
+
 
     @AdminRequired
     @PostMapping("/delete")
@@ -247,4 +270,35 @@ public class AdminBlueCertController {
         response.setUser(userService.getUserById(blueCertById.getUserId()));
         return response;
     }
+
+    private int getMaxCertLevel(Long userId){
+        List<BlueCert> list = blueCertService.queryBlueCert(new BlueCertRequest() {{
+            setUserId(userId);
+            setStatus(CertStatusEnum.审核通过.getValue());
+        }});
+        if(list.size()>0){
+            return UserCertLevelEnum.蓝V认证.getValue();
+        }
+
+        UserCorporateCertMatch matchByUserId = userCorporateCertMatchService.getUserCorporateCertMatchByUserId(userId);
+        if(matchByUserId!=null){
+            List<CorporateCert> list1 = corporateCertService.queryCorporateCert(new CorporateCertRequest() {{
+                setId(matchByUserId.getCorporateCertId());
+            }});
+            if(list1.size()>0){
+                return UserCertLevelEnum.企业认证.getValue();
+            }
+        }
+
+        List<PersonalCert> list2 = personalCertService.queryPersonalCert(new PersonalCertRequest() {{
+            setUserId(userId);
+            setStatus(CertStatusEnum.审核通过.getValue());
+        }});
+        if(list2.size()>0){
+            return UserCertLevelEnum.个人认证.getValue();
+        }
+
+        return UserCertLevelEnum.未认证.getValue();
+    }
+
 }
