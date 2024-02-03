@@ -121,7 +121,7 @@ public class AdminCorporateCertController {
         certTask.createCertMessage(userCorporateCertMatchById, NotifyCodeEnum.企业认证_审核通过,adminUser);
 
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.企业认证_审核通过);
+            setNotifyCode(NotifyCodeEnum.企业认证_审核通过.getCode());
             setUserIds(Collections.singletonList(userCorporateCertMatchById.getUserId()));
 
             Map<String, String> extras = new HashMap<>();
@@ -226,7 +226,7 @@ public class AdminCorporateCertController {
         }
 
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.企业认证_审核不通过);
+            setNotifyCode(NotifyCodeEnum.企业认证_审核不通过.getCode());
             setUserIds(Collections.singletonList(userCorporateCertMatchById.getUserId()));
 
             Map<String, String> extras = new HashMap<>();

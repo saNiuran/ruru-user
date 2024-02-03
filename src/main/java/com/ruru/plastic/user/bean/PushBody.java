@@ -1,6 +1,5 @@
 package com.ruru.plastic.user.bean;
 
-import com.ruru.plastic.user.enume.NotifyCodeEnum;
 import lombok.Data;
 import lombok.ToString;
 
@@ -16,7 +15,7 @@ public class PushBody implements Serializable {
     private String notifyTitle;
     private String msgTitle;
     private String msgContent;
-    private NotifyCodeEnum notifyCode; //推送消息编码
+    private String notifyCode; //推送消息编码
     private Map<String, String> extras;
 }
 

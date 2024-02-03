@@ -17,6 +17,7 @@ public interface UserWxService {
     Msg<UserWx> createUserWx(UserWx userWx);
 
     Msg<UserWx> updateUserWx(UserWx userWx);
+    Msg<UserWx> updateUserWxForce(UserWx userWx);
 
     Msg<Integer> deleteUserWx(UserWx userWx);
 

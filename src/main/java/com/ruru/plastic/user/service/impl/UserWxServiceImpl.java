@@ -86,6 +86,19 @@ public class UserWxServiceImpl implements UserWxService {
     }
 
     @Override
+    public Msg<UserWx> updateUserWxForce(UserWx userWx){
+        if(userWx==null || userWx.getId()==null){
+            return Msg.error(Constants.ERROR_PARAMETER);
+        }
+        UserWx userWxById = getUserWxById(userWx.getId());
+        if(userWxById==null){
+            return Msg.error(Constants.ERROR_NO_INFO);
+        }
+        userWxMapper.updateByPrimaryKey(userWx);
+        return Msg.success(getUserWxById(userWx.getId()));
+    }
+
+    @Override
     public Msg<Integer> deleteUserWx(UserWx userWx){
         if(userWx==null || userWx.getId()==null){
             return Msg.error(Constants.ERROR_PARAMETER);
@@ -147,6 +160,9 @@ public class UserWxServiceImpl implements UserWxService {
         }
         if(request.getType()!=null){
             criteria.andTypeEqualTo(request.getType());
+        }
+        if(request.getUserId()!=null){
+            criteria.andUserIdEqualTo(request.getUserId());
         }
 
         if (request.getStartTime() != null) {

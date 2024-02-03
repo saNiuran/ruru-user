@@ -115,7 +115,7 @@ public class AdminBlueCertController {
 
         certTask.createCertMessage(blueCertById, NotifyCodeEnum.蓝V认证_审核通过, adminUser);
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.蓝V认证_审核通过);
+            setNotifyCode(NotifyCodeEnum.蓝V认证_审核通过.getCode());
             setUserIds(Collections.singletonList(blueCertById.getUserId()));
 
             Map<String, String> extras = new HashMap<>();
@@ -219,7 +219,7 @@ public class AdminBlueCertController {
         }
 
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.蓝V认证_审核不通过);
+            setNotifyCode(NotifyCodeEnum.蓝V认证_审核不通过.getCode());
             setUserIds(Collections.singletonList(blueCertById.getUserId()));
 
             Map<String, String> extras = new HashMap<>();

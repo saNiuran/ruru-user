@@ -115,7 +115,7 @@ public class AdminPersonalCertController {
 
         certTask.createCertMessage(personalCertById, NotifyCodeEnum.个人认证_审核通过, adminUser);
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.个人认证_审核通过);
+            setNotifyCode(NotifyCodeEnum.个人认证_审核通过.getCode());
             setUserIds(Collections.singletonList(personalCertById.getUserId()));
 
             Map<String, String> extras = new HashMap<>();
@@ -213,7 +213,7 @@ public class AdminPersonalCertController {
         }
 
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.个人认证_审核不通过);
+            setNotifyCode(NotifyCodeEnum.个人认证_审核不通过.getCode());
             setUserIds(Collections.singletonList(personalCertById.getUserId()));
 
             Map<String, String> extras = new HashMap<>();

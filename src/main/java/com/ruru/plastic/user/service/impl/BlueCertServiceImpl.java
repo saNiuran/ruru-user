@@ -47,8 +47,7 @@ public class BlueCertServiceImpl implements BlueCertService {
     @Override
     public Msg<BlueCert> createBlueCert(BlueCert blueCert){
         if(blueCert==null || StringUtils.isEmpty(blueCert.getBlueName()) || StringUtils.isEmpty(blueCert.getSocialCode())
-                || StringUtils.isEmpty(blueCert.getLicenseImg()) || StringUtils.isEmpty(blueCert.getContactName())
-                || StringUtils.isEmpty(blueCert.getContactIdNo())){
+                || StringUtils.isEmpty(blueCert.getLicenseImg())){
             return Msg.error(Constants.ERROR_PARAMETER);
         }
 

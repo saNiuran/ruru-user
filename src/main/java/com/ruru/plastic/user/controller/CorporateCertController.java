@@ -120,7 +120,7 @@ public class CorporateCertController {
             //创建管理员通知消息
             certTask.createCertMessage(matchMsg.getData(), NotifyCodeEnum.企业认证_待审核_管理, null);
             certTask.createPush(new PushBody() {{
-                setNotifyCode(NotifyCodeEnum.企业认证_待审核_管理);
+                setNotifyCode(NotifyCodeEnum.企业认证_待审核_管理.getCode());
                 setUserIds(Collections.singletonList(0L));
 
                 Map<String, String> extras = new HashMap<>();
@@ -179,7 +179,7 @@ public class CorporateCertController {
         certTask.createCertMessage(userCorporateCertMatchByUserId, NotifyCodeEnum.企业认证_待审核_管理,null);
 
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.企业认证_待审核_管理);
+            setNotifyCode(NotifyCodeEnum.企业认证_待审核_管理.getCode());
             setUserIds(Collections.singletonList(0L));
 
             Map<String, String> extras = new HashMap<>();

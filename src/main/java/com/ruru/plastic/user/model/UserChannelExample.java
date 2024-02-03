@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class UserMatchExample {
+public class UserChannelExample {
     protected String orderByClause;
 
     protected boolean distinct;
 
     protected List<Criteria> oredCriteria;
 
-    public UserMatchExample() {
+    public UserChannelExample() {
         oredCriteria = new ArrayList<Criteria>();
     }
 
@@ -225,123 +225,63 @@ public class UserMatchExample {
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeIsNull() {
-            addCriterion("target_type is null");
+        public Criteria andAgentUserIdIsNull() {
+            addCriterion("agent_user_id is null");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeIsNotNull() {
-            addCriterion("target_type is not null");
+        public Criteria andAgentUserIdIsNotNull() {
+            addCriterion("agent_user_id is not null");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeEqualTo(Integer value) {
-            addCriterion("target_type =", value, "targetType");
+        public Criteria andAgentUserIdEqualTo(Long value) {
+            addCriterion("agent_user_id =", value, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeNotEqualTo(Integer value) {
-            addCriterion("target_type <>", value, "targetType");
+        public Criteria andAgentUserIdNotEqualTo(Long value) {
+            addCriterion("agent_user_id <>", value, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeGreaterThan(Integer value) {
-            addCriterion("target_type >", value, "targetType");
+        public Criteria andAgentUserIdGreaterThan(Long value) {
+            addCriterion("agent_user_id >", value, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeGreaterThanOrEqualTo(Integer value) {
-            addCriterion("target_type >=", value, "targetType");
+        public Criteria andAgentUserIdGreaterThanOrEqualTo(Long value) {
+            addCriterion("agent_user_id >=", value, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeLessThan(Integer value) {
-            addCriterion("target_type <", value, "targetType");
+        public Criteria andAgentUserIdLessThan(Long value) {
+            addCriterion("agent_user_id <", value, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeLessThanOrEqualTo(Integer value) {
-            addCriterion("target_type <=", value, "targetType");
+        public Criteria andAgentUserIdLessThanOrEqualTo(Long value) {
+            addCriterion("agent_user_id <=", value, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeIn(List<Integer> values) {
-            addCriterion("target_type in", values, "targetType");
+        public Criteria andAgentUserIdIn(List<Long> values) {
+            addCriterion("agent_user_id in", values, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeNotIn(List<Integer> values) {
-            addCriterion("target_type not in", values, "targetType");
+        public Criteria andAgentUserIdNotIn(List<Long> values) {
+            addCriterion("agent_user_id not in", values, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeBetween(Integer value1, Integer value2) {
-            addCriterion("target_type between", value1, value2, "targetType");
+        public Criteria andAgentUserIdBetween(Long value1, Long value2) {
+            addCriterion("agent_user_id between", value1, value2, "agentUserId");
             return (Criteria) this;
         }
 
-        public Criteria andTargetTypeNotBetween(Integer value1, Integer value2) {
-            addCriterion("target_type not between", value1, value2, "targetType");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdIsNull() {
-            addCriterion("target_id is null");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdIsNotNull() {
-            addCriterion("target_id is not null");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdEqualTo(Long value) {
-            addCriterion("target_id =", value, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdNotEqualTo(Long value) {
-            addCriterion("target_id <>", value, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdGreaterThan(Long value) {
-            addCriterion("target_id >", value, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdGreaterThanOrEqualTo(Long value) {
-            addCriterion("target_id >=", value, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdLessThan(Long value) {
-            addCriterion("target_id <", value, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdLessThanOrEqualTo(Long value) {
-            addCriterion("target_id <=", value, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdIn(List<Long> values) {
-            addCriterion("target_id in", values, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdNotIn(List<Long> values) {
-            addCriterion("target_id not in", values, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdBetween(Long value1, Long value2) {
-            addCriterion("target_id between", value1, value2, "targetId");
-            return (Criteria) this;
-        }
-
-        public Criteria andTargetIdNotBetween(Long value1, Long value2) {
-            addCriterion("target_id not between", value1, value2, "targetId");
+        public Criteria andAgentUserIdNotBetween(Long value1, Long value2) {
+            addCriterion("agent_user_id not between", value1, value2, "agentUserId");
             return (Criteria) this;
         }
 

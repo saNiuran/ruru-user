@@ -85,7 +85,7 @@ public class PersonalCertController {
         certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理, null);
 
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理);
+            setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理.getCode());
             setUserIds(Collections.singletonList(0L));
 
             Map<String, String> extras = new HashMap<>();
@@ -130,7 +130,7 @@ public class PersonalCertController {
         certTask.createCertMessage(msg.getData(), NotifyCodeEnum.个人认证_待审核_管理, null);
 
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理);
+            setNotifyCode(NotifyCodeEnum.个人认证_待审核_管理.getCode());
             setUserIds(Collections.singletonList(0L));
 
             Map<String, String> extras = new HashMap<>();

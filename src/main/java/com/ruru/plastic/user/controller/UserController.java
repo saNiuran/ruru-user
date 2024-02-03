@@ -9,7 +9,6 @@ import com.ruru.plastic.user.net.LoginRequired;
 import com.ruru.plastic.user.redis.RedisService;
 import com.ruru.plastic.user.request.*;
 import com.ruru.plastic.user.response.DataResponse;
-import com.ruru.plastic.user.response.UserMatchResponse;
 import com.ruru.plastic.user.response.UserPropertyResponse;
 import com.ruru.plastic.user.response.UserResponse;
 import com.ruru.plastic.user.task.PushTask;
@@ -41,8 +40,6 @@ public class UserController {
     private UserService userService;
     @Autowired
     private UserWxService userWxService;
-    @Autowired
-    private UserMatchService userMatchService;
     @Autowired
     private CompanyService companyService;
     @Autowired
@@ -83,6 +80,8 @@ public class UserController {
     private UserPropertyService userPropertyService;
     @Autowired
     private PropertyService propertyService;
+    @Autowired
+    private UserChannelService userChannelService;
 
     @LoginRequired
     @PostMapping("/info")
@@ -342,9 +341,20 @@ public class UserController {
                 setUserId(msg.getData().getId());
             }});
 
-            //通知channel模块
+            //通知channel模块, 这里是渠道报备后的结果
             channelFeignService.registerUserSuccess(msg.getData());
 
+            //记录到用户的来源渠道
+            int agentUserId = servletRequest.getIntHeader("rid");
+            if(agentUserId>0){
+                UserChannelRequest channelRequest = new UserChannelRequest();
+                channelRequest.setUserId(msg.getData().getId());
+                channelRequest.setAgentUserId(((Integer) agentUserId).longValue());
+                List<UserChannel> channels = userChannelService.queryUserChannel(channelRequest);
+                if(channels.size()==0){
+                    userChannelService.createUserChannel(channelRequest);
+                }
+            }
         }else if(userByMobile.getStatus().equals(UserStatusEnum.注销.getValue())){
 //            if(userByMobile.getUpdateTime().getTime() > DateUtil.offsiteDay(new Date(),-15).getTime()) {
                 //刚注销15天，给反悔期15天
@@ -389,74 +399,57 @@ public class UserController {
 
 
     /**
-     * 公众号用户登录，返回用户token (appType===2)
+     * 公众号、小程序用户登录，返回用户token (appType===2)
      */
     @PostMapping("/userLogin/h5mp")
-    public DataResponse<UserMatchResponse> userLoginH5Mp(@RequestBody LogonRequest request, HttpServletRequest servletRequest) {
+    public DataResponse<UserResponse> userLoginH5Mp(@RequestBody LogonRequest request, HttpServletRequest servletRequest) {
         if (request == null || StringUtils.isEmpty(request.getMobile()) || StringUtils.isEmpty(request.getSmsCode())
                 || StringUtils.isEmpty(servletRequest.getHeader("openId")) || StringUtils.isEmpty(servletRequest.getHeader("appType"))) {
             return DataResponse.error(Constants.ERROR_PARAMETER);
         }
 
+        DataResponse<UserResponse> dataResponse = userLogin(request, servletRequest);
+        if(dataResponse.getRetCode()!=0){
+            return dataResponse;
+        }
+
         String openId = servletRequest.getHeader("openId");
 
-        UserWx wx = userWxService.getUserWxByOpenId(openId);
-        if(wx==null){
+        List<UserWx> list = userWxService.queryUserWx(new UserWxRequest() {{
+            setOpenid(openId);
+            setType(servletRequest.getIntHeader("appType"));
+        }});
+
+        if(list.size()==0){
             Msg<UserWx> wxMsg = userWxService.createUserWx(new UserWx() {{
                 setOpenid(openId);
+                setUserId(dataResponse.getData().getId());
                 setType(servletRequest.getIntHeader("appType"));
             }});
             if(StringUtils.isNotEmpty(wxMsg.getErrorMsg())){
                 return DataResponse.error(wxMsg.getErrorMsg());
             }
-            wx = wxMsg.getData();
-        }
-
-        //校验手机号是不是有效
-        Matcher tmpMatcher = Constants.CHINA_MOBILE_PATTERN.matcher(request.getMobile());
-        if (!tmpMatcher.find()) {
-            return DataResponse.error("无效电话号码");
-        }
-        //检查smsCode是不是有效  (测试系统，不校验验证码)
-        if (!Arrays.asList("13901655769", "18057942731","18818881888","13584851021").contains(request.getMobile())) {
-            String s = redisService.getSmsCode(Constants.SMS_CODE_LOGIN + ":" + request.getMobile());
-            if (StringUtils.isEmpty(s)) {
-                return DataResponse.error("验证码已经失效！");
-            }
-            if (!s.equals(request.getSmsCode())) {
-                return DataResponse.error("验证码错误！");
-            }
-        }
-
-        //检查是不是已经有用户 且有效的
-        User userByMobile = userService.getUserByMobile(request.getMobile());
-        if (userByMobile == null || !userByMobile.getStatus().equals(UserStatusEnum.有效.getValue())) {
-            return DataResponse.error(Constants.ERROR_NO_INFO);
-        }
-
-        UserMatchRequest userMatchRequest = new UserMatchRequest();
-        userMatchRequest.setUserId(userByMobile.getId());
-        userMatchRequest.setTargetId(wx.getId());
-        userMatchRequest.setTargetType(UserTargetTypeEnum.微信公众号.getValue());
-        List<UserMatch> userMatches = userMatchService.queryUserMatch(userMatchRequest);
-
-        UserMatch userMatch;
-        if(userMatches.size()==0){
-            userMatch = userMatchService.createUserMatch(userMatchRequest).getData();
+            dataResponse.getData().setUserWx(wxMsg.getData());
         }else{
-            userMatch = userMatches.get(0);
+            list.get(0).setUserId(dataResponse.getData().getId());
+            userWxService.updateUserWx(list.get(0));
+
+            dataResponse.getData().setUserWx(list.get(0));
+
+            //释放以前用的微信号，如果有
+            List<UserWx> userWxList = userWxService.queryUserWx(new UserWxRequest() {{
+                setUserId(dataResponse.getData().getId());
+                setType(servletRequest.getIntHeader("appType"));
+            }});
+
+            for(UserWx userWx: userWxList){
+                if(!userWx.getOpenid().equals(openId)){
+                    userWx.setUserId(null);
+                    userWxService.updateUserWxForce(userWx);
+                }
+            }
         }
-
-        UserMatchResponse userMatchResponse = new UserMatchResponse();
-        BeanUtils.copyProperties(userMatch,userMatchResponse);
-
-        UserResponse response = new UserResponse();
-        BeanUtils.copyProperties(userByMobile, response);
-        response.setToken(tokenTask.createToken(userByMobile.getId(), servletRequest.getIntHeader("appType"), openId, UserTypeEnum.User.getValue()));
-        userMatchResponse.setUser(response);
-        userMatchResponse.setUserWx(wx);
-
-        return DataResponse.success(userMatchResponse);
+        return DataResponse.success(dataResponse.getData());
     }
 
     /**
@@ -497,7 +490,35 @@ public class UserController {
 
     @LoginRequired
     @PostMapping("/update")
-    public DataResponse<User> updateUser(@RequestBody User user) {
+    public DataResponse<User> updateUser(@RequestBody User user, HttpServletRequest request) {
+        //内容合规检查
+        if(request.getIntHeader("appType")== AppTypeEnum.微信小程序.getValue() || request.getIntHeader("appType")==AppTypeEnum.微信公众号.getValue()){
+            if(StringUtils.isNotEmpty(user.getNickName())) {
+                DataResponse<Boolean> dataResponse = smsFeignService.check(new WxSafe() {{
+                    setContent(user.getNickName());
+                    setScene(WxSafeMsgSceneEnum.资料.getValue());
+                }});
+                if(dataResponse.getRetCode()!=0){
+                    return DataResponse.error(dataResponse.getMessage());
+                }
+                if(!dataResponse.getData()){
+                    return DataResponse.error("昵称含违规信息！");
+                }
+            }
+            if(StringUtils.isNotEmpty(user.getSlogan())) {
+                DataResponse<Boolean> dataResponse = smsFeignService.check(new WxSafe() {{
+                    setContent(user.getSlogan());
+                    setScene(WxSafeMsgSceneEnum.资料.getValue());
+                }});
+                if(dataResponse.getRetCode()!=0){
+                    return DataResponse.error(dataResponse.getMessage());
+                }
+                if(!dataResponse.getData()){
+                    return DataResponse.error("签名内容含违规信息！");
+                }
+            }
+        }
+
         user.setMobile(null); //这里不能改手机号，手机号更改走单独的接口
         user.setAdminId(null);  //防止被篡改管理员去权限
         Msg<User> userMsg = userService.updateUser(user);

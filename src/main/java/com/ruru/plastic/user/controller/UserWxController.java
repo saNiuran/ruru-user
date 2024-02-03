@@ -31,6 +31,11 @@ public class UserWxController {
         return DataResponse.success(userWxById);
     }
 
+    @PostMapping("/query")
+    public DataResponse<List<UserWx>> queryUserWx(@RequestBody UserWxRequest request){
+        return DataResponse.success(userWxService.queryUserWx(request));
+    }
+
     @PostMapping("/new")
     public DataResponse<UserWx> createUserWx(@RequestBody UserWx userWx){
         Msg<UserWx> msg = userWxService.createUserWx(userWx);
@@ -64,4 +69,5 @@ public class UserWxController {
         }
         return DataResponse.success(list.get(0));
     }
+
 }

@@ -3,6 +3,7 @@ package com.ruru.plastic.user.feign;
 import com.ruru.plastic.user.bean.Message;
 import com.ruru.plastic.user.bean.PushBody;
 import com.ruru.plastic.user.bean.UserCounter;
+import com.ruru.plastic.user.bean.WxSafe;
 import com.ruru.plastic.user.model.User;
 import com.ruru.plastic.user.response.DataResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -23,4 +24,7 @@ public interface SmsFeignService {
 
     @PostMapping("/push/bean/pool/new")
     DataResponse<Void> createPush(@RequestBody PushBody pushBody);
+
+    @PostMapping("/wx/safe/check")
+    DataResponse<Boolean> check(@RequestBody WxSafe wxSafe);
 }

@@ -2,14 +2,12 @@ package com.ruru.plastic.user.model;
 
 import java.util.Date;
 
-public class UserMatch {
+public class UserChannel {
     private Long id;
 
     private Long userId;
 
-    private Integer targetType;
-
-    private Long targetId;
+    private Long agentUserId;
 
     private Date createTime;
 
@@ -29,20 +27,12 @@ public class UserMatch {
         this.userId = userId;
     }
 
-    public Integer getTargetType() {
-        return targetType;
+    public Long getAgentUserId() {
+        return agentUserId;
     }
 
-    public void setTargetType(Integer targetType) {
-        this.targetType = targetType;
-    }
-
-    public Long getTargetId() {
-        return targetId;
-    }
-
-    public void setTargetId(Long targetId) {
-        this.targetId = targetId;
+    public void setAgentUserId(Long agentUserId) {
+        this.agentUserId = agentUserId;
     }
 
     public Date getCreateTime() {

@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="com.ruru.plastic.user.dao.UserMatchMapper" >
-  <resultMap id="BaseResultMap" type="com.ruru.plastic.user.model.UserMatch" >
+<mapper namespace="com.ruru.plastic.user.dao.UserChannelMapper" >
+  <resultMap id="BaseResultMap" type="com.ruru.plastic.user.model.UserChannel" >
     <id column="id" property="id" jdbcType="BIGINT" />
     <result column="user_id" property="userId" jdbcType="BIGINT" />
-    <result column="target_type" property="targetType" jdbcType="INTEGER" />
-    <result column="target_id" property="targetId" jdbcType="BIGINT" />
+    <result column="agent_user_id" property="agentUserId" jdbcType="BIGINT" />
     <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
   </resultMap>
   <sql id="Example_Where_Clause" >
@@ -67,15 +66,15 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, user_id, target_type, target_id, create_time
+    id, user_id, agent_user_id, create_time
   </sql>
-  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserMatchExample" >
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserChannelExample" >
     select
     <if test="distinct" >
       distinct
     </if>
     <include refid="Base_Column_List" />
-    from user_match
+    from user_channel
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
     </if>
@@ -86,42 +85,39 @@
   <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Long" >
     select 
     <include refid="Base_Column_List" />
-    from user_match
+    from user_channel
     where id = #{id,jdbcType=BIGINT}
   </select>
   <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
-    delete from user_match
+    delete from user_channel
     where id = #{id,jdbcType=BIGINT}
   </delete>
-  <delete id="deleteByExample" parameterType="com.ruru.plastic.user.model.UserMatchExample" >
-    delete from user_match
+  <delete id="deleteByExample" parameterType="com.ruru.plastic.user.model.UserChannelExample" >
+    delete from user_channel
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.ruru.plastic.user.model.UserMatch" >
+  <insert id="insert" parameterType="com.ruru.plastic.user.model.UserChannel" >
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into user_match (user_id, target_type, target_id, 
-      create_time)
-    values (#{userId,jdbcType=BIGINT}, #{targetType,jdbcType=INTEGER}, #{targetId,jdbcType=BIGINT}, 
-      #{createTime,jdbcType=TIMESTAMP})
+    insert into user_channel (user_id, agent_user_id, create_time
+      )
+    values (#{userId,jdbcType=BIGINT}, #{agentUserId,jdbcType=BIGINT}, #{createTime,jdbcType=TIMESTAMP}
+      )
   </insert>
-  <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.UserMatch" >
+  <insert id="insertSelective" parameterType="com.ruru.plastic.user.model.UserChannel" >
     <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into user_match
+    insert into user_channel
     <trim prefix="(" suffix=")" suffixOverrides="," >
       <if test="userId != null" >
         user_id,
       </if>
-      <if test="targetType != null" >
-        target_type,
-      </if>
-      <if test="targetId != null" >
-        target_id,
+      <if test="agentUserId != null" >
+        agent_user_id,
       </if>
       <if test="createTime != null" >
         create_time,
@@ -131,25 +127,22 @@
       <if test="userId != null" >
         #{userId,jdbcType=BIGINT},
       </if>
-      <if test="targetType != null" >
-        #{targetType,jdbcType=INTEGER},
-      </if>
-      <if test="targetId != null" >
-        #{targetId,jdbcType=BIGINT},
+      <if test="agentUserId != null" >
+        #{agentUserId,jdbcType=BIGINT},
       </if>
       <if test="createTime != null" >
         #{createTime,jdbcType=TIMESTAMP},
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.ruru.plastic.user.model.UserMatchExample" resultType="java.lang.Integer" >
-    select count(*) from user_match
+  <select id="countByExample" parameterType="com.ruru.plastic.user.model.UserChannelExample" resultType="java.lang.Integer" >
+    select count(*) from user_channel
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
     </if>
   </select>
   <update id="updateByExampleSelective" parameterType="map" >
-    update user_match
+    update user_channel
     <set >
       <if test="record.id != null" >
         id = #{record.id,jdbcType=BIGINT},
@@ -157,11 +150,8 @@
       <if test="record.userId != null" >
         user_id = #{record.userId,jdbcType=BIGINT},
       </if>
-      <if test="record.targetType != null" >
-        target_type = #{record.targetType,jdbcType=INTEGER},
-      </if>
-      <if test="record.targetId != null" >
-        target_id = #{record.targetId,jdbcType=BIGINT},
+      <if test="record.agentUserId != null" >
+        agent_user_id = #{record.agentUserId,jdbcType=BIGINT},
       </if>
       <if test="record.createTime != null" >
         create_time = #{record.createTime,jdbcType=TIMESTAMP},
@@ -172,27 +162,23 @@
     </if>
   </update>
   <update id="updateByExample" parameterType="map" >
-    update user_match
+    update user_channel
     set id = #{record.id,jdbcType=BIGINT},
       user_id = #{record.userId,jdbcType=BIGINT},
-      target_type = #{record.targetType,jdbcType=INTEGER},
-      target_id = #{record.targetId,jdbcType=BIGINT},
+      agent_user_id = #{record.agentUserId,jdbcType=BIGINT},
       create_time = #{record.createTime,jdbcType=TIMESTAMP}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.ruru.plastic.user.model.UserMatch" >
-    update user_match
+  <update id="updateByPrimaryKeySelective" parameterType="com.ruru.plastic.user.model.UserChannel" >
+    update user_channel
     <set >
       <if test="userId != null" >
         user_id = #{userId,jdbcType=BIGINT},
       </if>
-      <if test="targetType != null" >
-        target_type = #{targetType,jdbcType=INTEGER},
-      </if>
-      <if test="targetId != null" >
-        target_id = #{targetId,jdbcType=BIGINT},
+      <if test="agentUserId != null" >
+        agent_user_id = #{agentUserId,jdbcType=BIGINT},
       </if>
       <if test="createTime != null" >
         create_time = #{createTime,jdbcType=TIMESTAMP},
@@ -200,15 +186,14 @@
     </set>
     where id = #{id,jdbcType=BIGINT}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.ruru.plastic.user.model.UserMatch" >
-    update user_match
+  <update id="updateByPrimaryKey" parameterType="com.ruru.plastic.user.model.UserChannel" >
+    update user_channel
     set user_id = #{userId,jdbcType=BIGINT},
-      target_type = #{targetType,jdbcType=INTEGER},
-      target_id = #{targetId,jdbcType=BIGINT},
+      agent_user_id = #{agentUserId,jdbcType=BIGINT},
       create_time = #{createTime,jdbcType=TIMESTAMP}
     where id = #{id,jdbcType=BIGINT}
   </update>
-  <select id="selectOneByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserMatchExample" >
+  <select id="selectOneByExample" resultMap="BaseResultMap" parameterType="com.ruru.plastic.user.model.UserChannelExample" >
     <!--
       WARNING - @mbg.generated
       This element is automatically generated by MyBatis Generator, do not modify.
@@ -216,7 +201,7 @@
     -->
     select
     <include refid="Base_Column_List" />
-    from user_match
+    from user_channel
     <if test="_parameter != null" >
       <include refid="Example_Where_Clause" />
     </if>

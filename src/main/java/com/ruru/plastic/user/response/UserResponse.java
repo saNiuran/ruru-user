@@ -20,4 +20,5 @@ public class UserResponse extends User implements Serializable {
     private UserAccount userAccount;
     private Company company;
     private List<UserPropertyResponse> properties;
+    private UserWx userWx;
 }

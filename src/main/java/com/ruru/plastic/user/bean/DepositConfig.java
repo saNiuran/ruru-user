@@ -11,6 +11,8 @@ public class DepositConfig {
 
     private String sort;
 
+    private String promoteInfo;
+
     public Long getId() {
         return id;
     }
@@ -49,5 +51,13 @@ public class DepositConfig {
 
     public void setSort(String sort) {
         this.sort = sort == null ? null : sort.trim();
+    }
+
+    public String getPromoteInfo() {
+        return promoteInfo;
+    }
+
+    public void setPromoteInfo(String promoteInfo) {
+        this.promoteInfo = promoteInfo == null ? null : promoteInfo.trim();
     }
 }

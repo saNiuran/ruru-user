@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.xiaoleilu.hutool.lang.Console.log;
+
 @RestController
 @RequestMapping("/blue/cert")
 public class BlueCertController {
@@ -87,8 +89,6 @@ public class BlueCertController {
         certificateLog.setCertStatus(certMsg.getData().getStatus());
         certificateLogService.createCertificateLog(certificateLog);
 
-
-
         return DataResponse.success(certMsg.getData());
     }
 
@@ -101,13 +101,17 @@ public class BlueCertController {
 
         BlueCert blueCertById = blueCertService.getBlueCertById(blueCert.getId());
 
-        if(blueCertById.getStatus().equals(CertStatusEnum.审核通过.getValue())
-                || blueCertById.getStatus().equals(CertStatusEnum.失效.getValue())){
+        if(blueCertById.getStatus().equals(CertStatusEnum.审核通过.getValue()) ||
+                blueCertById.getStatus().equals(CertStatusEnum.待审核.getValue())){
             return DataResponse.error("当前状态为"+CertStatusEnum.getEnum(blueCertById.getStatus())+"，不能修改！");
         }
 
         blueCert.setId(blueCert.getId());
-        blueCert.setStatus(CertStatusEnum.待付款.getValue());
+        if(blueCert.getStatus()==null) {
+            blueCert.setStatus(CertStatusEnum.待付款.getValue());
+        }else if(blueCert.getStatus().equals(CertStatusEnum.审核失败.getValue())){
+            blueCert.setStatus(CertStatusEnum.待审核.getValue());
+        }
         Msg<BlueCert> msg = blueCertService.updateBlueCert(blueCert);
         if(StringUtils.isNotEmpty(msg.getErrorMsg())){
             return DataResponse.error(msg.getErrorMsg());
@@ -124,17 +128,19 @@ public class BlueCertController {
 
 
         //创建管理员通知消息
-        certTask.createCertMessage(msg.getData(), NotifyCodeEnum.蓝V认证_待审核_管理,null);
+        if(msg.getData().getStatus().equals(CertStatusEnum.待审核.getValue())) {
+            certTask.createCertMessage(msg.getData(), NotifyCodeEnum.蓝V认证_待审核_管理, null);
 
-        certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.蓝V认证_待审核_管理);
-            setUserIds(Collections.singletonList(0L));
+            certTask.createPush(new PushBody() {{
+                setNotifyCode(NotifyCodeEnum.蓝V认证_待审核_管理.getCode());
+                setUserIds(Collections.singletonList(0L));
 
-            Map<String, String> extras = new HashMap<>();
-            extras.put("id",msg.getData().getId().toString());
-            extras.put("notifyCode", NotifyCodeEnum.蓝V认证_待审核_管理.getCode());
-            setExtras(extras);
-        }});
+                Map<String, String> extras = new HashMap<>();
+                extras.put("id",msg.getData().getId().toString());
+                extras.put("notifyCode", NotifyCodeEnum.蓝V认证_待审核_管理.getCode());
+                setExtras(extras);
+            }});
+        }
 
         return DataResponse.success(msg.getData());
     }
@@ -158,20 +164,29 @@ public class BlueCertController {
 
     @PostMapping("/pay/success")
     public DataResponse<Void> paySuccessBlueCert(@RequestBody BlueCert blueCert){
+        BlueCert blueCertById = blueCertService.getBlueCertById(blueCert.getId());
+        if(blueCertById==null){
+            log("支付成功，数据错误");
+            return DataResponse.error(Constants.ERROR_NO_INFO);
+        }
+
+        blueCertById.setStatus(CertStatusEnum.待审核.getValue());
+        blueCertService.updateBlueCert(blueCertById);
+
         CertificateLog certificateLog = new CertificateLog();
         certificateLog.setOperatorType(OperatorTypeEnum.系统.getValue());
         certificateLog.setOperatorId(0L);
         certificateLog.setLordId(blueCert.getId());
         certificateLog.setLordType(CertLordTypeEnum.营业执照.getValue());
         certificateLog.setCertLevel(UserCertLevelEnum.蓝V认证.getValue());
-        certificateLog.setCertStatus(CertStatusEnum.待付款.getValue());
+        certificateLog.setCertStatus(CertStatusEnum.待审核.getValue());
         certificateLogService.createCertificateLog(certificateLog);
 
 
         //创建管理员通知消息
         certTask.createCertMessage(blueCertService.getBlueCertById(blueCert.getId()), NotifyCodeEnum.蓝V认证_待审核_管理, null);
         certTask.createPush(new PushBody() {{
-            setNotifyCode(NotifyCodeEnum.蓝V认证_待审核_管理);
+            setNotifyCode(NotifyCodeEnum.蓝V认证_待审核_管理.getCode());
             setUserIds(Collections.singletonList(0L));
 
             Map<String, String> extras = new HashMap<>();
